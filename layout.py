@@ -58,7 +58,7 @@ class Window(Tk):
         menubar = Menu(self)
 
         filemenu = Menu(menubar, tearoff=0)
-        filemenu.add_command(label="Stop", command=self.complete_quit)  # TODO quit threads on exit
+        filemenu.add_command(label="Stop", command=self.complete_quit)
         menubar.add_cascade(label="File", menu=filemenu)
 
         editmenu = Menu(menubar, tearoff=0)
