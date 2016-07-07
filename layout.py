@@ -39,20 +39,25 @@ class Window(Tk):
     def show_frame(self, cont):
         frame = self.frames[cont]  # shows the frame that is called by class
         frame.tkraise()
-        self.current_frame = frame
+        self.current_frame = cont
 
     def reset(self):
         self.frames["FormPage"].v.set("Select file...")
         main.filename = None
         self.frames["FormPage"].ents["Email"].delete(0, END)
         self.frames["FormPage"].ents["Keywords"].delete(0, END)
-        self.frames["FormPage"].ents["Save As"].delete(0, END)
+        self.frames["FormPage"].v2.set("Select file...")
+        main.save_as_name = None
 
         self.frames["AdvancedPage"].ents["Symbol Column"].delete(0, END)
         self.frames["AdvancedPage"].ents["Symbol Column"].insert(0, 'G')
         self.frames["AdvancedPage"].ents["Synonyms Column"].delete(0, END)
         self.frames["AdvancedPage"].ents["Synonyms Column"].insert(0, 'H')
+        self.frames["AdvancedPage"].v.set("ALL")
+        self.frames["AdvancedPage"].entry.delete(0, END)
+        self.frames["AdvancedPage"].entry.config(state="disabled")
         self.frames["AdvancedPage"].desc.set(0)
+        self.frames["AdvancedPage"].sort.set(0)
 
     def menu_config(self):
         menubar = Menu(self)
@@ -69,13 +74,21 @@ class Window(Tk):
         menubar.add_cascade(label="Edit", menu=editmenu)
 
         advancedmenu = Menu(menubar, tearoff=0)
-        advancedmenu.add_command(label="Options", command=lambda: self.show_frame("AdvancedPage"))
+        advancedmenu.add_command(label="Options", command=self.options_go)
+        # TODO if the frame is already "AdvancedPage," then it should go to "FormPage"
+
         menubar.add_cascade(label="Advanced", menu=advancedmenu)
 
         self.config(menu=menubar)
 
     def complete_quit(self):
         main.ask_quit = True
+
+    def options_go(self):
+        if self.current_frame == "AdvancedPage":
+            self.show_frame("FormPage")
+        else:
+            self.show_frame("AdvancedPage")
 
 
 class StartPage(Frame):
@@ -121,8 +134,8 @@ class FormPage(Frame):
         lab2.grid(row=3, column=0, sticky=W, padx=5, pady=5)
         b2 = Button(self, text="Browse...", command=self.asksaveasfilename)
         b2.grid(row=3, column=2, sticky=E, padx=5, pady=5)
-        self.b3 = Button(self, text="Next", command=lambda: main.get_entries(controller))
-        self.b3.grid(row=6, columnspan=3, padx=5, pady=5)
+        self.b3 = Button(self, text="Next", width=5, command=lambda: main.get_entries(controller))
+        self.b3.grid(row=6, columnspan=3, padx=5, pady=(20,5))
 
         self.v = StringVar()
         self.v.set("Select file...")
@@ -150,6 +163,7 @@ class FormPage(Frame):
 
 
 class AdvancedPage(Frame):
+    # TODO add choice for sort and number of genes to extract from file
 
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -159,33 +173,62 @@ class AdvancedPage(Frame):
         self.config = configparser.ConfigParser()
         self.config.read("config.ini")
 
-        b1 = Button(self, text="Import Settings", command=self.import_settings)
-        b1.grid(row=6, column=0, padx=5, pady=5)
-
         self.ents["Symbol Column"].insert(0, 'G')
         self.ents["Synonyms Column"].insert(0, 'H')
 
-        self.desc = IntVar()  # if desc is 1, then it is checked
+        lab = Label(self, text="Number of Genes to Use:")
+        lab.grid(row=3, columnspan=3, sticky=W, padx=5, pady=(10, 0))
 
-        b2 = Button(self, text="Continue",
+        self.v = StringVar()
+        self.v.set("ALL")
+        rb = Radiobutton(self, text="All", variable=self.v, value="ALL", command=self.disable_entry)
+        rb2 = Radiobutton(self, text="Top x genes", variable=self.v, value="SELECT", command=self.enable_entry)
+        self.entry = Entry(self, width=10, state="disabled")
+        rb.grid(row=4, column=0, sticky=W, padx=5, pady=5)
+        rb2.grid(row=4, column=1, sticky=E, padx=5, pady=5)
+        self.entry.grid(row=4, column=2, sticky=W, pady=5)
+
+        self.desc = IntVar()  # if desc is 1, then it is checked
+        self.sort = IntVar()  # if sort is 1, then it is checked
+
+        c = Checkbutton(self, text="Add descriptions", variable=self.desc)
+        c.grid(row=5, column=0, columnspan=2, sticky=W, padx=5, pady=5)
+        c2 = Checkbutton(self, text="Sort", variable=self.sort)
+        c2.grid(row=5, column=2, sticky=W, padx=5, pady=5)
+
+        b1 = Button(self, text="Import Settings", command=self.import_settings)
+        b1.grid(row=6, column=0, padx=5, pady=5)
+
+        b2 = Button(self, text="Back",
                     command=lambda: self.controller.show_frame("FormPage"))
         b2.grid(row=6, column=2, padx=5, pady=5)
         b3 = Button(self, text="Save Settings", command=self.save)
         b3.grid(row=6, column=1, padx=5, pady=5)
-        c = Checkbutton(self, text="Add descriptions", variable=self.desc)
-        c.grid(row=5, columnspan=2, sticky=W)
+
+    def enable_entry(self):
+        self.entry.configure(state="normal")
+        self.entry.update()
+
+    def disable_entry(self):
+        self.entry.configure(state="disabled")
+        self.entry.update()
 
     def save(self):
         if not self.config.has_section("main"):
             self.config.add_section("main")
-        self.config.set("main", "Symbol Column", self.ents["Symbol Column"].get())
-        self.config.set("main", "Synonyms Column", self.ents["Synonyms Column"].get())
-        self.config.set("main", "Descriptions", str(self.desc.get()))
+        if not self.config.has_section("advanced"):
+            self.config.add_section("advanced")
 
-        self.config.set("main", "Filename", main.filename)
+        self.config.set("advanced", "Symbol Column", self.ents["Symbol Column"].get())
+        self.config.set("advanced", "Synonyms Column", self.ents["Synonyms Column"].get())
+        self.config.set("advanced", "Genes to Use", "ALL" if self.v.get()=="ALL" else self.entry.get())
+        self.config.set("advanced", "Descriptions", str(self.desc.get()))
+        self.config.set("advanced", "Sort", str(self.sort.get()))
+
+        self.config.set("main", "Filename", '' if main.filename is None else main.filename)
         self.config.set("main", "Email", self.controller.frames["FormPage"].ents["Email"].get())
         self.config.set("main", "Keywords", self.controller.frames["FormPage"].ents["Keywords"].get())
-        self.config.set("main", "Save As", main.save_as_name)
+        self.config.set("main", "Save As", '' if main.save_as_name is None else main.save_as_name)
 
         with open("config.ini", "w") as f:
             self.config.write(f)
@@ -195,21 +238,33 @@ class AdvancedPage(Frame):
         try:
             self.ents["Symbol Column"].delete(0, END)
             self.ents["Synonyms Column"].delete(0, END)
-            self.ents["Symbol Column"].insert(0, self.config.get("main", "Symbol Column"))
-            self.ents["Synonyms Column"].insert(0, self.config.get("main", "Synonyms Column"))
-            self.desc.set(self.config.get("main", "Descriptions"))
+            self.ents["Symbol Column"].insert(0, self.config.get("advanced", "Symbol Column"))
+            self.ents["Synonyms Column"].insert(0, self.config.get("advanced", "Synonyms Column"))
+            if self.config.get("advanced", "Genes to Use") == "ALL":
+                self.v.set("ALL")
+            else:
+                self.v.set("SELECT")
+                self.entry.config(state="normal")
+                self.entry.delete(0, END)
+                self.entry.insert(0, self.config.get("advanced", "Genes to Use"))
+            self.desc.set(self.config.get("advanced", "Descriptions"))
+            self.desc.set(self.config.get("advanced", "Sort"))
 
-            main.filename = self.config.get("main", "Filename")
-            self.controller.frames["FormPage"].v.set(self.config.get("main", "Filename").split('/')[-1])
+            main.filename = self.config.get("main", "Filename") if self.config.get("main", "Filename") != '' else None
+            self.controller.frames["FormPage"].v.set("Select file..." if self.config.get("main", "Save As") == '' else \
+                                                         self.config.get("main", "Filename").split('/')[-1])
             self.controller.frames["FormPage"].ents["Email"].delete(0, END)
             self.controller.frames["FormPage"].ents["Email"].insert(0, self.config.get("main", "Email"))
             self.controller.frames["FormPage"].ents["Keywords"].delete(0, END)
             self.controller.frames["FormPage"].ents["Keywords"].insert(0, self.config.get("main", "Keywords"))
-            main.save_as_name = self.config.get("main", "Save As")
-            self.controller.frames["FormPage"].v2.set(self.config.get("main", "Save As").split('/')[-1])
+            main.save_as_name = self.config.get("main", "Save As") if self.config.get("main", "Save As") != '' else None
+            self.controller.frames["FormPage"].v2.set("Select file..." if self.config.get("main", "Save As") == '' else\
+                                                          self.config.get("main", "Save As").split('/')[-1])
 
-        except configparser.NoSectionError:
-            pass
+        except (configparser.NoSectionError, configparser.NoOptionError) as e:
+            tkinter.messagebox.showerror(title="Outdated config.ini",
+                                         message="Config.ini file is invalid or outdated, please save settings again. "
+                                         + str(e))
 
 
 class SuccessPage(Frame):
