@@ -3,11 +3,14 @@ This program sends gene symbols to the PubMed database to retrieve the number of
 
 7/7/16
 UPDATES:
-- wordcloud library added. since it isn't compiled, go to http://www.lfd.uci.edu/~gohlke/pythonlibs/#wordcloud, download
-    wordcloud-1.2.1-cp35-cp35m-win_amd64.whl if you have python35 and a 64 bit computer. Put the file in
-    C:Python35/Lib/site-packages, open the command line there, and type:
-    python -m pip install wordcloud-1.2.1-cp34-cp34m-win_amd64.whl
-- you can now leave the keywords field blank to only find total counts
+- separates keywords by AND in one search
+- added option to sort or not sort
+- added option to limit the number of genes to search, using radiobuttons
+- added functionality of Option button in Advanced menu to lead you back to the main menu if clicked again
+- added advanced section in config.ini file
+- made warning that the config file was outdated if new sections or options were added after a previously
+saved version
+- updated reset button in the edit menu
 """
 
 import threading
@@ -24,7 +27,6 @@ from openpyxl.comments import Comment
 import requests
 import mygene
 import re
-import wordcloud
 
 import layout
 
@@ -37,6 +39,10 @@ total_queries = 0
 total_count_col = 29
 symbol_col = 'G'
 ask_quit = False
+num_genes = 0
+
+# TODO make word cloud based below (show descriptions in word cloud)
+# TOdO we want low ratio (one decimal) high count
 
 
 def progress(root):
@@ -48,9 +54,10 @@ def progress(root):
 
 
 def get_entries(root):
-    global wb, total_queries, total_count_col
+    global wb, total_queries, total_count_col, num_genes
 
     if filename is None:
+        tkinter.messagebox.showinfo(title="Error", message="Please select a file to sort.")
         return
     email = root.frames["FormPage"].ents["Email"].get()
     keywords = root.frames["FormPage"].ents["Keywords"].get()
@@ -59,16 +66,26 @@ def get_entries(root):
     # the input is turned into a list of keywords
     wb = try_file(filename)
     ws = wb.active
-    rows, total_count_col = read_sheet(ws)
+    num_genes = int(root.frames["AdvancedPage"].entry.get()) if root.frames["AdvancedPage"].v.get() == "SELECT" else \
+        ws.max_row - 1
+    rows, total_count_col = read_sheet(ws, num_genes)
     try:
-        genes = get_aliases(rows, root)
-        num_genes = ws.max_row - 1
+        genes = get_aliases(rows[1:], root)
         print("Num genes: %d" % num_genes)
-        total_queries = num_genes + len(keywords) * num_genes
+        total_queries = num_genes * 2 if len(keywords) > 0 else num_genes
         print("Total queries: %d" % total_queries)
         if root.frames["AdvancedPage"].desc.get() == 1:  # if the box is checked
             total_queries += num_genes  # adds the number of comment queries
-
+        if root.frames["AdvancedPage"].v.get() == "SELECT":
+            print("Adding 20 genes to output")
+            ws = wb.create_sheet(title="Output", index=0)
+            r = 1
+            for row in rows:
+                c = 1
+                for data in row:
+                    ws.cell(row=r, column=c).value = data
+                    c += 1
+                r += 1
         try:
             root.frames["FormPage"].b3.grid_remove()
             thread1 = threading.Thread(target=lambda: progress(root))
@@ -116,11 +133,13 @@ def make_form(frame, fields):
     return entries
 
 
-def read_sheet(ws):
+def read_sheet(ws, amt=None):
     """Reads all existing values from list of columns. Assumes that the file has three columns."""
+    if amt is None:
+        amt = ws.max_column
     total_col = ws.max_column + 1
     gene_rows = []
-    for row in range(2, ws.max_row+1):
+    for row in range(1, amt+2):
         aliases = []
         for col in range(1, total_col):
             cell = ws.cell(row=row, column=col).value
@@ -156,16 +175,19 @@ def set_info(ws, email, keywords, genes, root):
     appended to the list of genes not found, which is later printed out and sorted to the top of the worksheet."""
     global pb_int
     checkbox = root.frames["AdvancedPage"].desc.get()
+    quick_save = False
     all_counts = []
     number = 1
     for aliases in genes:  # for each list of aliases (one gene) in the full list of genes
         if ask_quit:
+            print("Quitting...")
             quit(0)
             root.quit()
         print("#%d" % number)
         counts = get_count(aliases, keywords, email, root)
         # the length of the list counts returned is the length of keywords + 1
-        if len(counts) < len(keywords) + 1:  # if counts list is not complete
+        if len(counts) < 2 if len(keywords) > 1 else 1:  # if counts list is not complete
+            quick_save = True
             break
         else:
             print(counts)
@@ -174,21 +196,25 @@ def set_info(ws, email, keywords, genes, root):
 
     write_info(ws, all_counts, keywords)
 
-    for keyword in keywords:
-        ws.column_dimensions[_get_column_letter(total_count_col+2)].width = 16
-        col = total_count_col + 2 + keywords.index(keyword)
-        ws.cell(row=1, column=col).value = "COUNT RATIO %s" % keyword
-        row = 2
-        for counts in all_counts:
-            try:
-                count = int(counts[keywords.index(keyword)+1]) / int(counts[0])
-            except ZeroDivisionError:
-                count = 1
-            ws.cell(row=row, column=col).value = count
-            row += 1
+    if not quick_save:
 
-    ws, rows = sort_ws(ws)
+        if len(keywords) > 0:  # set the ratio column
+            ws.column_dimensions[_get_column_letter(total_count_col+2)].width = 16
+            col = total_count_col + 2
+            ws.cell(row=1, column=col).value = "COUNT RATIO"
+            row = 2
+            for counts in all_counts:
+                try:
+                    count = int(counts[1]) / int(counts[0])
+                except ZeroDivisionError:
+                    count = 1
+                ws.cell(row=row, column=col).value = count
+                row += 1
+        if root.frames["AdvancedPage"].sort.get() == 1:
+            ws, rows = sort_ws(ws)
 
+    else:
+        rows = read_sheet(ws)
     if checkbox == 1:
         print("Getting descriptions...")
         column1 = [row[symbol_col] for row in rows]
@@ -221,7 +247,7 @@ def get_count(aliases, keywords, email, root):
     global pb_int
     Entrez.email = email
     counts = []  # first number is total, second number is narrowed by keyword, third number is next keyword, etc
-    for i in range(len(keywords)+1):
+    for i in range(2) if len(keywords) > 1 else range(1):
         pb_int += 1
         try:
             if i == 0:
@@ -230,7 +256,7 @@ def get_count(aliases, keywords, email, root):
                 counts.append("0")
                 continue  # if total count is 0, then narrow count is automatically 0
             else:
-                query = "(%s) AND %s" % (" OR ".join(aliases), keywords[i-1])
+                query = "(%s) AND %s" % (" OR ".join(aliases), " AND ".join(keywords))
         except TypeError:  # if the gene name is in the wrong format (like if a date is entered accidentally)
             counts.append("0")
             continue
@@ -256,11 +282,8 @@ def get_count(aliases, keywords, email, root):
 def write_info(ws, all_counts, keywords):
     ws.column_dimensions[_get_column_letter(total_count_col)].width = 16
     ws.cell(row=1, column=total_count_col).value = "TOTAL COUNT"
-    col = total_count_col + 1
-    for keyword in keywords:  # to title the columns
-        ws.column_dimensions[_get_column_letter(col)].width = 16
-        ws.cell(row=1, column=col).value = '"%s" COUNT' % keyword
-        col += 1
+    ws.column_dimensions[_get_column_letter(total_count_col+1)].width = 16
+    ws.cell(row=1, column=total_count_col+1).value = '"%s" COUNT' % "/".join(keywords)  # to title the columns
     row = 2
     for counts in all_counts:
         col = total_count_col
@@ -273,9 +296,13 @@ def write_info(ws, all_counts, keywords):
 def sort_ws(ws):
     """Sorts the file's genes into a list of tuples"""
     rows, _ = read_sheet(ws)  # gets a list of genes from read_gene
-    rows.sort(key=lambda x: x[total_count_col-1])  # sorts genes by "Total Count" column AD (30)
-    print("Total_count_col is %d" % total_count_col)
-    print("The rows are %r" % rows)
+    rows = rows[1:num_genes+1]
+    try:
+        rows.sort(key=lambda x: x[total_count_col-1])  # sorts genes by "Total Count" column
+    except TypeError:
+        print("Sorting TypeError")
+        return ws, rows
+    print("Sorted rows are %r" % [row[-3:-1] for row in rows])
     row = 2
     for gene in rows:
         col = 1
