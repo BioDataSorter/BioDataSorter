@@ -15,10 +15,11 @@ saved version
 
 import threading
 import time
+import os
 from urllib.error import URLError
 
 from tkinter import *
-from tkinter.ttk import *
+import tkinter.ttk as ttk
 import tkinter.filedialog, tkinter.messagebox
 from Bio import Entrez
 from openpyxl import load_workbook
@@ -26,12 +27,10 @@ from openpyxl.utils import _get_column_letter
 from openpyxl.comments import Comment
 import requests
 import mygene
-import re
 
 import layout
 
 wb = None
-bar = None
 filename = None
 save_as_name = None
 pb_int = 0  # global variable for num of times get_count has been executed
@@ -46,39 +45,36 @@ num_genes = 0
 
 
 def progress(root):
-    global bar
-    bar = layout.ProgressWin(root.frames["FormPage"])
-    bar.grid(row=7, columnspan=3)
-    bar.tkraise()
-    bar.start()
+    root.bar.pb.grid()
+    root.bar.start()
 
 
 def get_entries(root):
     global wb, total_queries, total_count_col, num_genes
 
     if filename is None:
-        tkinter.messagebox.showinfo(title="Error", message="Please select a file to sort.")
+        tkinter.messagebox.showinfo(title='Error', message="Please select a file to sort.")
         return
-    email = root.frames["FormPage"].ents["Email"].get()
-    keywords = root.frames["FormPage"].ents["Keywords"].get()
+    email = root.custom_frames['FormPage'].ents['Email'].get()
+    keywords = root.custom_frames['FormPage'].ents['Keywords'].get()
 
     keywords = [x.strip() for x in keywords.split(',')] if keywords != '' else []
     # the input is turned into a list of keywords
     wb = try_file(filename)
     ws = wb.active
-    num_genes = int(root.frames["AdvancedPage"].entry.get()) if root.frames["AdvancedPage"].v.get() == "SELECT" else \
-        ws.max_row - 1
+    num_genes = int(root.custom_frames['AdvancedPage'].entry.get()) if root.custom_frames['AdvancedPage'].v.get() == \
+        "SELECT" or root.custom_frames['AdvancedPage'].entry.get() > ws.max_row - 1 else ws.max_row - 1
     rows, total_count_col = read_sheet(ws, num_genes)
     try:
         genes = get_aliases(rows[1:], root)
         print("Num genes: %d" % num_genes)
         total_queries = num_genes * 2 if len(keywords) > 0 else num_genes
         print("Total queries: %d" % total_queries)
-        if root.frames["AdvancedPage"].desc.get() == 1:  # if the box is checked
+        if root.custom_frames['AdvancedPage'].desc.get() == 1:  # if the box is checked
             total_queries += num_genes  # adds the number of comment queries
-        if root.frames["AdvancedPage"].v.get() == "SELECT":
+        if root.custom_frames['AdvancedPage'].v.get() == "SELECT":
             print("Adding 20 genes to output")
-            ws = wb.create_sheet(title="Output", index=0)
+            ws = wb.create_sheet(title='Output', index=0)
             r = 1
             for row in rows:
                 c = 1
@@ -87,24 +83,26 @@ def get_entries(root):
                     c += 1
                 r += 1
         try:
-            root.frames["FormPage"].b3.grid_remove()
+            root.custom_frames['FormPage'].b3.unbind('<Button-1>')
+            root.custom_frames['FormPage'].b3.unbind('<Enter>')
+            root.custom_frames['FormPage'].b3.config(background='dark khaki')
             thread1 = threading.Thread(target=lambda: progress(root))
             thread2 = threading.Thread(target=lambda: set_info(ws, email, keywords, genes, root))
-            thread1.start()
+            thread1.start()  # TODO look into this error (google app engine)
             thread2.start()
         except Exception as e:
-            print(str(e))
+            tkinter.messagebox.showerror(title='Error',
+                                         message='The process was interrupted, but your file was saved.\n' + str(e))
             if ".xlsx" == save_as_name[-5:]:
                 save_as = save_as_name
             else:
                 save_as = save_as_name + ".xlsx"
             wb.save(save_as)
-            quit()
-            root.quit()
+            sys.exit()
 
-    except (AttributeError, IndexError):
+    except (AttributeError, IndexError) as e:
         tkinter.messagebox.showinfo(title="Column Error",
-                                    message="Symbol and synonym columns should be changed.")
+                                    message="Check advanced page column input. \n" + str(e))
 
 
 def try_file(user_input):
@@ -114,32 +112,18 @@ def try_file(user_input):
     if ".xlsx" == user_input[-5:]:
         file_name = user_input
     else:
-        file_name = user_input + ".xlsx"
+        file_name = user_input + '.xlsx'
     return load_workbook(filename=file_name, data_only=True)
 
 
-def make_form(frame, fields):
-    entries = {}
-    n = 1
-    for field in fields:
-        row = Frame(frame)
-        lab = Label(row, width=22, text=field+": ", anchor='w')
-        ent = Entry(row)
-        row.grid(row=n, column=0, columnspan=3, padx=5, pady=5)
-        lab.grid(row=n, column=1, sticky=E)
-        ent.grid(row=n, column=2, sticky="nsew")
-        entries[field] = ent
-        n += 1
-    return entries
-
-
 def read_sheet(ws, amt=None):
-    """Reads all existing values from list of columns. Assumes that the file has three columns."""
+    """Reads all existing values from list of columns if amt is not specified, otherwise, it gets up to the amt
+    parameter"""
     if amt is None:
-        amt = ws.max_column
+        amt = ws.max_row - 1
     total_col = ws.max_column + 1
     gene_rows = []
-    for row in range(1, amt+2):
+    for row in range(1, amt+2):  # amt+2 selects two blank rows
         aliases = []
         for col in range(1, total_col):
             cell = ws.cell(row=row, column=col).value
@@ -150,11 +134,10 @@ def read_sheet(ws, amt=None):
 
 def get_aliases(gene_rows, root):
     """This converts the data from the rows into all of the gene's aliases. First it adds the symbol to the list of
-    aliases, then it adds the synonyms (separated by semicolon) and returns all of the aliases of all
-    the genes."""
+    aliases, then it adds the synonyms (separated by semicolon) and returns all of the aliases of all the genes."""
     global symbol_col
-    symbol_input = root.frames["AdvancedPage"].ents["Symbol Column"].get()
-    synonym_input = root.frames["AdvancedPage"].ents["Synonyms Column"].get()
+    symbol_input = root.custom_frames["AdvancedPage"].ents["Symbol Column"].get()
+    synonym_input = root.custom_frames["AdvancedPage"].ents["Synonyms Column"].get()
     symbol_col = symbol_input if symbol_input != "" else 'G'
     synonym_col = synonym_input if synonym_input != "" else 'H'
     symbol_col = ord(symbol_col.lower()) - 97  # convert the column letter to a number
@@ -174,15 +157,14 @@ def set_info(ws, email, keywords, genes, root):
     get_count method. Then each count is entered into the worksheet. If a gene is not found in the database, it is
     appended to the list of genes not found, which is later printed out and sorted to the top of the worksheet."""
     global pb_int
-    checkbox = root.frames["AdvancedPage"].desc.get()
+    checkbox = root.custom_frames["AdvancedPage"].desc.get()
     quick_save = False
     all_counts = []
     number = 1
     for aliases in genes:  # for each list of aliases (one gene) in the full list of genes
         if ask_quit:
             print("Quitting...")
-            quit(0)
-            root.quit()
+            sys.exit()
         print("#%d" % number)
         counts = get_count(aliases, keywords, email, root)
         # the length of the list counts returned is the length of keywords + 1
@@ -210,32 +192,37 @@ def set_info(ws, email, keywords, genes, root):
                     count = 1
                 ws.cell(row=row, column=col).value = count
                 row += 1
-        if root.frames["AdvancedPage"].sort.get() == 1:
+        if root.custom_frames["AdvancedPage"].sort.get() == 1:
             ws, rows = sort_ws(ws)
+        else:
+            rows = read_sheet(ws)
 
-    else:
-        rows = read_sheet(ws)
     if checkbox == 1:
         print("Getting descriptions...")
         column1 = [row[symbol_col] for row in rows]
         row = 2
         for symbol in column1:
             if ask_quit:
-                quit(0)
-                root.quit()
+                sys.exit()
             pb_int += 1
             if symbol != '':
-                comment = Comment(get_summary(symbol), "PubMed")
-                comment.width = '200pt'
-                comment.height = '100pt'
-                ws.cell(row=row, column=symbol_col+1).comment = comment
+                try:
+                    comment = Comment(get_summary(symbol), "PubMed")
+                    comment.width = '200pt'
+                    comment.height = '100pt'
+                    ws.cell(row=row, column=symbol_col+1).comment = comment
+                except Exception as e:
+                    tkinter.messagebox.showerror(title='Error',
+                                                 message='Getting descriptions was interrupted by an error, ' +
+                                                         'but your spreadsheet was saved.')
             row += 1
 
     wb.save(save_as_name)
 
     print("Done!")
-    root.frames["SuccessPage"].set_string()
-    root.show_frame("SuccessPage")
+    if tkinter.messagebox.showinfo(title='Success',
+                                   message="Your file is located in " + os.path.dirname(filename)) == 'ok':
+        root.bar.pb.grid_forget()
 
 
 def get_count(aliases, keywords, email, root):
@@ -302,7 +289,6 @@ def sort_ws(ws):
     except TypeError:
         print("Sorting TypeError")
         return ws, rows
-    print("Sorted rows are %r" % [row[-3:-1] for row in rows])
     row = 2
     for gene in rows:
         col = 1
@@ -346,9 +332,9 @@ def get_summary(symbol):
 
 
 def main():
-    global root
     root = layout.Window('BioDataSorter')
+    root.geometry('450x330+300+300')
     root.mainloop()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
