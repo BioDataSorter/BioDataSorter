@@ -1,16 +1,14 @@
 """
 This program sends gene symbols to the PubMed database to retrieve the number of citations.
 
-7/7/16
+8/14/16
+I will work on graphing the data next
 UPDATES:
-- separates keywords by AND in one search
-- added option to sort or not sort
-- added option to limit the number of genes to search, using radiobuttons
-- added functionality of Option button in Advanced menu to lead you back to the main menu if clicked again
-- added advanced section in config.ini file
-- made warning that the config file was outdated if new sections or options were added after a previously
-saved version
-- updated reset button in the edit menu
+- fixed sorting for one or more keywords
+- added a settings option to file menu for changing background color
+- truncates long file names so that the formatting is intact
+- right click menu now has import settings and save settings for saving the background color preferences
+- fixed color hardcoding so that they are easily accessible for viewing and editing
 """
 
 import threading
@@ -19,8 +17,9 @@ import os
 from urllib.error import URLError
 
 from tkinter import *
-import tkinter.ttk as ttk
-import tkinter.filedialog, tkinter.messagebox
+import tkinter.filedialog
+import tkinter.messagebox
+
 from Bio import Entrez
 from openpyxl import load_workbook
 from openpyxl.utils import _get_column_letter
@@ -60,11 +59,25 @@ def get_entries(root):
 
     keywords = [x.strip() for x in keywords.split(',')] if keywords != '' else []
     # the input is turned into a list of keywords
-    wb = try_file(filename)
+    try:
+        wb = try_file(filename)
+    except TypeError:
+        tkinter.messagebox.showinfo(title='Error', message="Unexpected spreadsheet type.")
+        return
     ws = wb.active
-    num_genes = int(root.custom_frames['AdvancedPage'].entry.get()) if root.custom_frames['AdvancedPage'].v.get() == \
-        "SELECT" or root.custom_frames['AdvancedPage'].entry.get() > ws.max_row - 1 else ws.max_row - 1
-    rows, total_count_col = read_sheet(ws, num_genes)
+    if root.custom_frames['AdvancedPage'].v.get() == 'SELECT':  # TODO test with non-integer input
+        if root.custom_frames['AdvancedPage'].entry.get() == '' or \
+                root.custom_frames['AdvancedPage'].entry.get().isdigit():
+            tkinter.messagebox.showinfo(title='Invalid input', message='Insert an integer for \'Top x genes\'.')
+            return
+        if int(root.custom_frames['AdvancedPage'].entry.get()) >= ws.max_row:
+            num_genes = ws.max_row - 1
+        else:
+            num_genes = int(root.custom_frames['AdvancedPage'].entry.get())
+    else:
+        num_genes = ws.max_row - 1
+    rows = read_sheet(ws, num_genes)
+    total_count_col = ws.max_column
     try:
         genes = get_aliases(rows[1:], root)
         print("Num genes: %d" % num_genes)
@@ -83,12 +96,10 @@ def get_entries(root):
                     c += 1
                 r += 1
         try:
-            root.custom_frames['FormPage'].b3.unbind('<Button-1>')
-            root.custom_frames['FormPage'].b3.unbind('<Enter>')
-            root.custom_frames['FormPage'].b3.config(background='dark khaki')
+            root.custom_frames['FormPage'].b3.grid_forget()
             thread1 = threading.Thread(target=lambda: progress(root))
             thread2 = threading.Thread(target=lambda: set_info(ws, email, keywords, genes, root))
-            thread1.start()  # TODO look into this error (google app engine)
+            thread1.start()
             thread2.start()
         except Exception as e:
             tkinter.messagebox.showerror(title='Error',
@@ -121,15 +132,14 @@ def read_sheet(ws, amt=None):
     parameter"""
     if amt is None:
         amt = ws.max_row - 1
-    total_col = ws.max_column + 1
     gene_rows = []
     for row in range(1, amt+2):  # amt+2 selects two blank rows
         aliases = []
-        for col in range(1, total_col):
+        for col in range(1, ws.max_column):
             cell = ws.cell(row=row, column=col).value
             aliases.append(cell)
         gene_rows.append(aliases)
-    return gene_rows, total_col
+    return gene_rows
 
 
 def get_aliases(gene_rows, root):
@@ -168,7 +178,7 @@ def set_info(ws, email, keywords, genes, root):
         print("#%d" % number)
         counts = get_count(aliases, keywords, email, root)
         # the length of the list counts returned is the length of keywords + 1
-        if len(counts) < 2 if len(keywords) > 1 else 1:  # if counts list is not complete
+        if len(counts) < 2:  # if counts list is not complete
             quick_save = True
             break
         else:
@@ -176,11 +186,10 @@ def set_info(ws, email, keywords, genes, root):
             all_counts.append(counts)
             number += 1
 
-    write_info(ws, all_counts, keywords)
-
     if not quick_save:
+        ws, rows = write_info(ws, all_counts, keywords)
 
-        if len(keywords) > 0:  # set the ratio column
+        if len(keywords) > 1:  # set the ratio column    was 0 changed to 1
             ws.column_dimensions[_get_column_letter(total_count_col+2)].width = 16
             col = total_count_col + 2
             ws.cell(row=1, column=col).value = "COUNT RATIO"
@@ -193,9 +202,10 @@ def set_info(ws, email, keywords, genes, root):
                 ws.cell(row=row, column=col).value = count
                 row += 1
         if root.custom_frames["AdvancedPage"].sort.get() == 1:
-            ws, rows = sort_ws(ws)
-        else:
-            rows = read_sheet(ws)
+            ws, rows = sort_ws(rows)
+
+    else:
+        print("Quick save")
 
     if checkbox == 1:
         print("Getting descriptions...")
@@ -208,8 +218,8 @@ def set_info(ws, email, keywords, genes, root):
             if symbol != '':
                 try:
                     comment = Comment(get_summary(symbol), "PubMed")
-                    comment.width = '200pt'
-                    comment.height = '100pt'
+                    comment.width = '1000pt'
+                    comment.height = '1000pt'
                     ws.cell(row=row, column=symbol_col+1).comment = comment
                 except Exception as e:
                     tkinter.messagebox.showerror(title='Error',
@@ -223,6 +233,8 @@ def set_info(ws, email, keywords, genes, root):
     if tkinter.messagebox.showinfo(title='Success',
                                    message="Your file is located in " + os.path.dirname(filename)) == 'ok':
         root.bar.pb.grid_forget()
+        root.custom_frames['FormPage'].b3.grid(row=6, columnspan=3, padx=5, pady=(20, 5))
+        pb_int = 0
 
 
 def get_count(aliases, keywords, email, root):
@@ -234,8 +246,8 @@ def get_count(aliases, keywords, email, root):
     global pb_int
     Entrez.email = email
     counts = []  # first number is total, second number is narrowed by keyword, third number is next keyword, etc
-    for i in range(2) if len(keywords) > 1 else range(1):
-        pb_int += 1
+    for i in range(2):  # if len(keywords) > 1 else range(1)
+        pb_int += 1  # increment the progressbar which will update as the other thread runs
         try:
             if i == 0:
                 query = " OR ".join(aliases)
@@ -247,11 +259,12 @@ def get_count(aliases, keywords, email, root):
         except TypeError:  # if the gene name is in the wrong format (like if a date is entered accidentally)
             counts.append("0")
             continue
+
         try:
             handle = Entrez.egquery(term=query)
         except URLError as e:
             print(str(e))
-            time.sleep(5)
+            time.sleep(5)  # if there PubMed blocks the queries then it will wait for 5 seconds and try again
             try:
                 handle = Entrez.egquery(term=query)
             except Exception as e:
@@ -279,13 +292,15 @@ def write_info(ws, all_counts, keywords):
             col += 1
         row += 1
 
+    rows = read_sheet(ws)
+    return ws, rows[1:]
 
-def sort_ws(ws):
+
+def sort_ws(rows):
     """Sorts the file's genes into a list of tuples"""
-    rows, _ = read_sheet(ws)  # gets a list of genes from read_gene
-    rows = rows[1:num_genes+1]
+    ws = wb.active
     try:
-        rows.sort(key=lambda x: x[total_count_col-1])  # sorts genes by "Total Count" column
+        rows.sort(key=lambda x: x[total_count_col - 1])  # sorts genes by "Total Count" column
     except TypeError:
         print("Sorting TypeError")
         return ws, rows
@@ -333,7 +348,7 @@ def get_summary(symbol):
 
 def main():
     root = layout.Window('BioDataSorter')
-    root.geometry('450x330+300+300')
+    root.geometry(str(layout.WINDOW_WIDTH)+'x'+str(layout.WINDOW_HEIGHT)+'+300+300')
     root.mainloop()
 
 if __name__ == '__main__':
