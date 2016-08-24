@@ -1,4 +1,10 @@
+<<<<<<< HEAD
 openpyxl
 requests
 mygene
+=======
+openpyxl
+requests
+mygene
+>>>>>>> d101941c5541442d9de0af20244c619d8637c398
 Pillow

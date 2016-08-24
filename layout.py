@@ -498,8 +498,8 @@ class AdvancedPage(Frame):
         self.entry.update()
 
     def disable_entry(self):
-        self.entry.delete(0, END)
         self.entry.configure(state="disabled")
+        self.entry.delete(0, END)
         self.entry.update()
 
     def save(self):
