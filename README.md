@@ -26,11 +26,16 @@ This is a project that we are working on for Winthrop University Hospital for ge
 <li>Clone the repository to your computer</li>
 <li>Make sure you have Python 3 installed on your computer as well as all of the dependencies
 <ul>
-<li>Biopython</li>
-<li>Pillow</li>
-<li>Openpyxl</li>
-<li>Requests</li>
-<li>Mygene</li>
+<li>Biopython- can be installed from <a href="https://github.com/biopython/DIST">Biopython on GitHub</a> for 32-bit versions or 
+<a href="http://www.lfd.uci.edu/~gohlke/pythonlibs/#biopython">www.lfd.uci.edu</a> for a 64-bit version</li>
+<li>
+Use pip to install the rest of the requirements
+<ol>
+<li>Make sure pip is in your environment variables' PATH variable as C:\Python34\Scripts\pip</li>
+<li>In command prompt, navigate to the BioDataSorter repository and run <code>python -m pip install -r requirements.txt</code></li>
+<li>If this doesn't work, install each one separately (Pillow, openpyxl, requests, mygene) using <code>python -m pip install <i>requirement</i></code></li>
+</ol>
+</li>
 </ul>
 </li>
 <li>Run main.py in command prompt by navigating to your local repository and typing <code>python main.py</code></li>
