@@ -1,6 +1,9 @@
 from tkinter import *
 import tkinter.ttk as ttk
-import tkinter.filedialog, tkinter.messagebox, tkinter.colorchooser
+import tkinter.filedialog
+import tkinter.messagebox
+import tkinter.colorchooser
+
 import getpass
 import configparser
 import sys
@@ -69,7 +72,7 @@ class Window(Tk):
 
         # AdvancedPage is before FormPage because FormPage init needs to access its methods (save and import_entries)
         for F in (StartPage, AdvancedPage, FormPage):
-            frame = ttk.Frame(self.nbk)
+            frame = ttk.Frame(self.nbk)  # TODO change tab titles
             custom = F(frame, self, {'background': NOTEBOOK_COLOR,
                                      'borderwidth': '1',
                                      'relief': 'solid'})
@@ -88,6 +91,8 @@ class Window(Tk):
 
         filemenu = Menu(self.menubar, tearoff=0)
 
+        # TODO add a button for saving and quitting while the program is running
+
         settingsmenu = Menu(filemenu, tearoff=0)
         settingsmenu.add_command(label="Change Settings", command=self.change_color)
         settingsmenu.add_command(label="Import Settings", command=self.custom_frames['AdvancedPage'].import_settings)
@@ -99,8 +104,10 @@ class Window(Tk):
         entriesmenu.add_command(label="Save Entries")
         filemenu.add_cascade(label="Entries", menu=entriesmenu)
 
+        filemenu.add_command(label="Convert", command=self.convert)
+
         filemenu.add_separator()
-        filemenu.add_command(label="Stop", command=complete)
+        filemenu.add_command(label="Save and Stop", command=complete)
         filemenu.add_command(label="Exit", command=sys.exit)
         self.menubar.add_cascade(label="File", menu=filemenu)  # index = 0
 
@@ -165,13 +172,11 @@ class Window(Tk):
 
     def show_frame(self, cont):
         if cont == 'AdvancedPage' and str(self.frames['FormPage']) not in self.nbk.tabs():
-            tkinter.messagebox.showinfo(title='Unable to open advanced options',
-                                        message='Please click New before accessing advanced options.')
-        else:
-            if str(self.frames[cont]) not in self.nbk.tabs():
-                self.add_frame(cont)
-            self.nbk.select(self.frame_indexes[cont])
-            self.current_frame = cont
+            self.show_frame('FormPage')
+        if str(self.frames[cont]) not in self.nbk.tabs():
+            self.add_frame(cont)
+        self.nbk.select(self.frame_indexes[cont])
+        self.current_frame = cont
 
     def add_frame(self, cont):
         frame = self.frames[cont]  # shows the frame that is called by class
@@ -231,9 +236,58 @@ class Window(Tk):
         self.custom_frames["AdvancedPage"].desc.set(0)
         self.custom_frames["AdvancedPage"].sort.set(0)
 
+    def convert(self):
+        root = ConvertPrompt(self)
+        root.mainloop()
+
 
 def complete():
     main.ask_quit = True
+
+
+class ConvertPrompt(Toplevel):
+
+    def __init__(self, master, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
+        self.title("Convert File")
+
+        self.file_opt = options = {}
+        options['defaultextension'] = '.txt'
+        options['filetypes'] = [('text files', '.txt')]
+        options['initialdir'] = "C:\\Users\\%s\\" % getpass.getuser()
+        options['parent'] = master
+        options['title'] = "Choose a file"
+
+        self.grid_columnconfigure(1, weight=1)
+        msg = Label(self, text="Convert tab delineated .txt to .xlsx.")
+        msg.grid(row=0, columnspan=3, pady=(10, 4), padx=5)
+        lab = Label(self, text="Text file: ")
+        lab.grid(row=1, column=0, padx=5)
+
+        self.v = StringVar()  # This variable stores the name of the file to convert
+        self.v_display = StringVar()  # this stores the displayed version of the filename
+        lab2 = Label(self, textvariable=self.v_display)
+        b1 = ttk.Button(self, text="Browse...", command=self.askopenfilename)
+        b1.grid(row=1, column=2, padx=5)
+        btn = ttk.Button(self, text="Convert")
+        btn.grid(row=2, column=0, padx=4)
+        btn1 = ttk.Button(self, text="OK", command=self.destroy)
+        btn1.grid(row=2, column=1)
+        self.geometry('300x150+300+300')
+
+    def askopenfilename(self):
+        file = tkinter.filedialog.askopenfilename(**self.file_opt)
+        if file:
+            f_display = file.split('/')[-1]
+            self.set_filename(f_display)
+
+    def set_filename(self, string):
+        self.v.set(string)
+        if len(string) > 20:
+            self.v_display.set(string[:20] + '...')
+        else:
+            self.v_display.set(string)
+        self.update()
 
 
 class StatusBar(Frame):
@@ -265,37 +319,28 @@ class OptionsBar(Frame):
         Frame.__init__(self, parent, *args, **kwargs)
         self.controller = controller
 
-        image = Image.open(".\images\Information.png")
-        image = image.resize((30, 30), Image.ANTIALIAS)
-        self.photo = ImageTk.PhotoImage(image)
-        self.b1 = Label(self,
-                        text="Info",
-                        image=self.photo,
-                        compound=TOP,
-                        width=70,
-                        bg=NOTEBOOK_COLOR,
-                        cursor='hand2')
+        self.b1, self.photo = self.button_from_label("Info", ".\images\Information.png", self.info_button)
         self.b1.grid(row=0, padx=(20, 0), pady=15)
-        self.b1.bind('<Button-1>', self.info_button)
-        self.b1.bind('<Enter>', lambda e: self.b1.config(bg='light cyan'))
-        self.b1.bind('<Leave>', lambda e: self.b1.config(bg=NOTEBOOK_COLOR))
-        self.b1.bind('<ButtonRelease-1>', lambda e: self.b1.config(bg='light cyan'))
 
-        image2 = Image.open(".\images\Search.png")
-        image2 = image2.resize((30, 30), Image.ANTIALIAS)
-        self.photo2 = ImageTk.PhotoImage(image2)
-        self.b2 = Label(self,
-                        text="New",
-                        image=self.photo2,
-                        compound=TOP,
-                        width=70,
-                        bg=NOTEBOOK_COLOR,
-                        cursor='hand2')
+        self.b2, self.photo2 = self.button_from_label("New", ".\images\Search.png", self.new_button)
         self.b2.grid(row=1, padx=(20, 0), pady=15)
-        self.b2.bind('<Button-1>', self.new_button)
-        self.b2.bind('<Enter>', lambda e: self.b2.config(bg='light cyan'))
-        self.b2.bind('<Leave>', lambda e: self.b2.config(bg=NOTEBOOK_COLOR))
-        self.b2.bind('<ButtonRelease-1>', lambda e: self.b2.config(bg='light cyan'))
+
+    def button_from_label(self, text, image_url, cmd):
+        image = Image.open(image_url)
+        image = image.resize((30, 30), Image.ANTIALIAS)
+        photo = ImageTk.PhotoImage(image)
+        btn = Label(self,
+                    text=text,
+                    image=photo,
+                    compound=TOP,
+                    width=70,
+                    bg=NOTEBOOK_COLOR,
+                    cursor='hand2')
+        btn.bind('<Button-1>', cmd)
+        btn.bind('<Enter>', lambda e: btn.config(bg='light cyan'))
+        btn.bind('<Leave>', lambda e: btn.config(bg=NOTEBOOK_COLOR))
+        btn.bind('<ButtonRelease-1>', lambda e: btn.config(bg='light cyan'))
+        return btn, photo
 
     def info_button(self, _):
         self.b1.config(bg='LightSlateGray')
@@ -410,7 +455,7 @@ class FormPage(Frame):
 
     def on_button_3(self, event):
         try:
-            self.popup.tk_popup(event.x_root + 60, event.y_root + 11, 0)
+            self.popup.tk_popup(event.x_root + 55, event.y_root + 11, 0)
         finally:
             self.popup.grab_release()
 
@@ -435,6 +480,7 @@ class AdvancedPage(Frame):
         super().__init__(parent,  *args, **kwargs)
         # Frame.__init__(parent, *args, **kwargs)
         self.controller = controller
+        # TODO search for 'gene title' and 'gene symbol' to get the column number
         self.ents, _ = make_form(self, 0, ["Symbol Column", "Synonyms Column"])
 
         self.config = configparser.ConfigParser()
@@ -442,8 +488,6 @@ class AdvancedPage(Frame):
 
         self.ents["Symbol Column"].insert(0, 'G')
         self.ents["Synonyms Column"].insert(0, 'H')
-
-        # TODO self.grid_rowconfigure()
 
         s = ttk.Style()
         s.configure("White.TRadiobutton", background=NOTEBOOK_COLOR)
@@ -481,9 +525,9 @@ class AdvancedPage(Frame):
         b1 = ttk.Button(buttons_frame, text="Import Entries", command=self.import_entries)
         b1.grid(row=0, column=0, padx=5, pady=5)
 
-        b2 = ttk.Button(buttons_frame, text="Run",
+        self.b2 = ttk.Button(buttons_frame, text="Run",
                         command=lambda: main.get_entries(controller))
-        b2.grid(row=0, column=2, padx=5, pady=5)
+        self.b2.grid(row=0, column=2, padx=5, pady=5)
         b3 = ttk.Button(buttons_frame, text="Save Entries", command=self.save)
         b3.grid(row=0, column=1, padx=5, pady=5)
 
@@ -498,8 +542,8 @@ class AdvancedPage(Frame):
         self.entry.update()
 
     def disable_entry(self):
-        self.entry.configure(state="disabled")
         self.entry.delete(0, END)
+        self.entry.configure(state="disabled")
         self.entry.update()
 
     def save(self):
@@ -521,8 +565,6 @@ class AdvancedPage(Frame):
 
         with open("config.ini", "w") as f:
             self.config.write(f)
-        tkinter.messagebox.showinfo(title='Success',
-                                    message='Your options have been saved. Import entries for future use.')
 
     def import_entries(self):
         try:
@@ -569,6 +611,8 @@ class AdvancedPage(Frame):
         if not self.config.has_section('settings'):
             self.config.add_section('settings')
         self.config.set("settings", "Background Color", self.controller.bg_color)
+        with open("config.ini", "w") as f:
+            self.config.write(f)
 
 
 class ProgressWin(Frame):

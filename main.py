@@ -1,14 +1,11 @@
 """
 This program sends gene symbols to the PubMed database to retrieve the number of citations.
 
-8/14/16
+8/24/16
 I will work on graphing the data next
 UPDATES:
-- fixed sorting for one or more keywords
-- added a settings option to file menu for changing background color
-- truncates long file names so that the formatting is intact
-- right click menu now has import settings and save settings for saving the background color preferences
-- fixed color hardcoding so that they are easily accessible for viewing and editing
+- added convert .txt to .xlsx from the app
+- fixed clearing Top X Genes
 """
 
 import threading
@@ -41,6 +38,7 @@ num_genes = 0
 
 # TODO make word cloud based below (show descriptions in word cloud)
 # TOdO we want low ratio (one decimal) high count
+# TODO automated downloading of Excel input from GEO
 
 
 def progress(root):
@@ -50,6 +48,13 @@ def progress(root):
 
 def get_entries(root):
     global wb, total_queries, total_count_col, num_genes
+
+    def is_number(s):
+        try:
+            float(s)
+            return True
+        except ValueError:
+            return False
 
     if filename is None:
         tkinter.messagebox.showinfo(title='Error', message="Please select a file to sort.")
@@ -65,10 +70,11 @@ def get_entries(root):
         tkinter.messagebox.showinfo(title='Error', message="Unexpected spreadsheet type.")
         return
     ws = wb.active
-    if root.custom_frames['AdvancedPage'].v.get() == 'SELECT':  # TODO test with non-integer input
-        if root.custom_frames['AdvancedPage'].entry.get() == '' or \
-                root.custom_frames['AdvancedPage'].entry.get().isdigit():
-            tkinter.messagebox.showinfo(title='Invalid input', message='Insert an integer for \'Top x genes\'.')
+    root.custom_frames['AdvancedPage'].b2.config(state="disabled")
+    if root.custom_frames['AdvancedPage'].v.get() == 'SELECT':
+        if root.custom_frames['AdvancedPage'].entry.get() == '' or not \
+                is_number(root.custom_frames['AdvancedPage'].entry.get()):
+            tkinter.messagebox.showinfo(title='Invalid input', message='Insert an number for \'Top x genes\'.')
             return
         if int(root.custom_frames['AdvancedPage'].entry.get()) >= ws.max_row:
             num_genes = ws.max_row - 1
@@ -127,7 +133,8 @@ def try_file(user_input):
     return load_workbook(filename=file_name, data_only=True)
 
 
-def read_sheet(ws, amt=None):
+def read_sheet(ws, amt=None):  # TODO don't read empty rows in between
+    # TODO make sure no 'gene title' (synonyms) and 'gene symbol' are the exact same
     """Reads all existing values from list of columns if amt is not specified, otherwise, it gets up to the amt
     parameter"""
     if amt is None:
@@ -135,7 +142,7 @@ def read_sheet(ws, amt=None):
     gene_rows = []
     for row in range(1, amt+2):  # amt+2 selects two blank rows
         aliases = []
-        for col in range(1, ws.max_column):
+        for col in range(1, ws.max_column+1):
             cell = ws.cell(row=row, column=col).value
             aliases.append(cell)
         gene_rows.append(aliases)
@@ -147,6 +154,7 @@ def get_aliases(gene_rows, root):
     aliases, then it adds the synonyms (separated by semicolon) and returns all of the aliases of all the genes."""
     global symbol_col
     symbol_input = root.custom_frames["AdvancedPage"].ents["Symbol Column"].get()
+    # TODO check if it is called gene title (in GEO datasets)
     synonym_input = root.custom_frames["AdvancedPage"].ents["Synonyms Column"].get()
     symbol_col = symbol_input if symbol_input != "" else 'G'
     synonym_col = synonym_input if synonym_input != "" else 'H'
@@ -204,28 +212,28 @@ def set_info(ws, email, keywords, genes, root):
         if root.custom_frames["AdvancedPage"].sort.get() == 1:
             ws, rows = sort_ws(rows)
 
+        if checkbox == 1:
+            print("Getting descriptions...")
+            column1 = [row[symbol_col] for row in rows]
+            row = 2
+            for symbol in column1:
+                if ask_quit:
+                    sys.exit()
+                pb_int += 1
+                if symbol != '':
+                    try:
+                        comment = Comment(get_summary(symbol), "PubMed")
+                        comment.width = '1000'  # see if this works
+                        comment.height = '1000'
+                        ws.cell(row=row, column=symbol_col+1).comment = comment
+                    except Exception as e:
+                        tkinter.messagebox.showerror(title='Error',
+                                                     message='Getting descriptions was interrupted by an error, ' +
+                                                             'but your spreadsheet was saved.')
+                row += 1
+
     else:
         print("Quick save")
-
-    if checkbox == 1:
-        print("Getting descriptions...")
-        column1 = [row[symbol_col] for row in rows]
-        row = 2
-        for symbol in column1:
-            if ask_quit:
-                sys.exit()
-            pb_int += 1
-            if symbol != '':
-                try:
-                    comment = Comment(get_summary(symbol), "PubMed")
-                    comment.width = '1000pt'
-                    comment.height = '1000pt'
-                    ws.cell(row=row, column=symbol_col+1).comment = comment
-                except Exception as e:
-                    tkinter.messagebox.showerror(title='Error',
-                                                 message='Getting descriptions was interrupted by an error, ' +
-                                                         'but your spreadsheet was saved.')
-            row += 1
 
     wb.save(save_as_name)
 
@@ -234,6 +242,7 @@ def set_info(ws, email, keywords, genes, root):
                                    message="Your file is located in " + os.path.dirname(filename)) == 'ok':
         root.bar.pb.grid_forget()
         root.custom_frames['FormPage'].b3.grid(row=6, columnspan=3, padx=5, pady=(20, 5))
+        root.custom_frames['AdvancedPage'].b2.config(state="enabled")
         pb_int = 0
 
 
@@ -281,6 +290,7 @@ def get_count(aliases, keywords, email, root):
 
 def write_info(ws, all_counts, keywords):
     ws.column_dimensions[_get_column_letter(total_count_col)].width = 16
+
     ws.cell(row=1, column=total_count_col).value = "TOTAL COUNT"
     ws.column_dimensions[_get_column_letter(total_count_col+1)].width = 16
     ws.cell(row=1, column=total_count_col+1).value = '"%s" COUNT' % "/".join(keywords)  # to title the columns
@@ -304,6 +314,7 @@ def sort_ws(rows):
     except TypeError:
         print("Sorting TypeError")
         return ws, rows
+    print(rows)
     row = 2
     for gene in rows:
         col = 1
@@ -318,7 +329,7 @@ def sort_ws(rows):
 def get_summary(symbol):
     version = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; it; rv:1.8.1.11) Gecko/20071127 Firefox/2.0.0.11'
     mg = mygene.MyGeneInfo()
-    try:
+    try:  # TODO check if there is a 'Gene ID' row in the spreadsheet
         entrez_id = mg.query('symbol:%s' % symbol, species='human')['hits'][0]['entrezgene']
     except (KeyError, IndexError):
         return "No entries found. (Entrez ID not found)"
