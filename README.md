@@ -32,18 +32,18 @@ program can be found in the [Sample Data folder](https://github.com/BioDataSorte
 
     * Use pip to install the rest of the requirements  
         1. Make sure pip is in your environment variables' PATH variable as C:\Python34\Scripts\pip  
-        2. In command prompt, navigate to the BioDataSorter repository and run `python -m pip install -r requirements.txt`
+        2. In command prompt, navigate to the BioDataSorter repository and run <pre>python -m pip install -r requirements.txt</pre>
         3. If this doesn't work, install each one separately (Pillow, openpyxl, requests, mygene) using <pre>python -m pip install _requirement_</pre>
 
 ## Usage
-![Alt](./images/readme/window.png =500x)
-1. Click new and input data - the file would be the GEO file from the above instructions
-2. Right-click and select *More Options*
-3. Change the Symbol Column to the input's *Symbol* or *Gene Symbol* column letter
-4. Change the Synonyms Column to the input's *Synonyms* or *Gene Title* column letter
-5. Select any other options you wish to include in your output
-6. Click run in the Form page or from the Run Menu
-7. Wait for the program to finish
+1. Click new and input data - the file would be the GEO file from the above instructions  
+<img src="./images/readme/window.png"  width="500px" />  
+2. Right-click and select *More Options*  
+3. Change the Symbol Column to the input's *Symbol* or *Gene Symbol* column letter  
+4. Change the Synonyms Column to the input's *Synonyms* or *Gene Title* column letter  
+5. Select any other options you wish to include in your output  
+6. Click run in the Form page or from the Run Menu  
+7. Wait for the program to finish  
 
 ## Contact Us
 ### Send us questions, constructive criticism, comments, and suggestions for features!
