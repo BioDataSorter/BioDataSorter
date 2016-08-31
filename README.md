@@ -46,5 +46,5 @@ program can be found in the [Sample Data folder](https://github.com/BioDataSorte
 7. Wait for the program to finish  
 
 ## Contact Us
-### Send us questions, constructive criticism, comments, and suggestions for features!
+Send us questions, constructive criticism, comments, and suggestions for features!
 Email: caitlinchou@gmail.com
