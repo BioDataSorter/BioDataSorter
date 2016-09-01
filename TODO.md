@@ -5,7 +5,7 @@
 - [ ] clean up main.py into several files
 - [ ] unittests
 - [ ] write documentation
-- [ ] make key for word cloud
+- [x] make key for word cloud
 
 ## For future updates
 - [ ] automated downloading of Excel input from GEO
