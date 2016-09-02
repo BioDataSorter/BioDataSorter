@@ -2,7 +2,7 @@ from tkinter import *
 from tkinter import font
 import tkinter.colorchooser
 import tkinter.filedialog
-import tkinter.messagebox
+import tkinter.messagebox as messagebox
 import tkinter.ttk as ttk
 import webbrowser
 import configparser
@@ -35,12 +35,15 @@ class Window(Tk):
 
         self.wm_resizable(0, 0)
         self.title(title)
-        self.wm_iconbitmap("images\doublehelix.ico")  # TODO edit favicon for task bar icon
-        self.messages = ["Start anew process, convert a GEO text file to Excel, or play with settings.",  # File
+        self.wm_iconbitmap("images\doublehelix.ico")
+        self.messages = ["Start a new process, convert a GEO text file to "
+                         "Excel, or play with settings.",  # File
                          "Edit the main form or reset both forms.",  # Edit
                          "Toggle the status bar.",  # View
-                         "Stop to stop running program then exit for quick exit.",
-                         "Plot a word cloud of an output file based on the number of citations from PubMed.",  # Graph
+                         "Stop to stop running program then exit for quick "
+                         "exit.",
+                         "Plot a word cloud of an output file based on the "
+                         "number of citations from PubMed.",  # Graph
                          "Edit the advanced menu."]  # Advanced
         self.bg_color = 'powder blue'
 
@@ -68,12 +71,15 @@ class Window(Tk):
         # NOTEBOOK AND TABS
         # =================
 
-        self.nbk = ttk.Notebook(self.sub_container, width=NOTEBOOK_WIDTH, height=NOTEBOOK_HEIGHT)
+        self.nbk = ttk.Notebook(self.sub_container, width=NOTEBOOK_WIDTH,
+                                height=NOTEBOOK_HEIGHT)
 
-        self.frames = {}  # contains ttk.Frame type for adding and showing frames
+        # contains ttk.Frame type for adding and showing frames
+        self.frames = {}
         self.custom_frames = {}  # contains custom types for accessing elements
 
-        # AdvancedPage is before FormPage because FormPage init needs to access its methods (save and import_entries)
+        # AdvancedPage is before FormPage because FormPage init needs to access
+        # its methods (save and import_entries)
         for F in (StartPage, AdvancedPage, FormPage, OutputPage):
             frame = ttk.Frame(self.nbk)
             custom = F(frame, self, {'background': NOTEBOOK_COLOR,
@@ -81,7 +87,9 @@ class Window(Tk):
                                      'highlightcolor': 'gray90'})
             custom.pack(expand=True, fill=BOTH, side=TOP)
             custom.tkraise()
-            self.frames[str(F)[15:-2]] = frame  # instead of the class as the key, the string of the class is the key
+
+            # instead of the class as the key, the string is the key
+            self.frames[str(F)[15:-2]] = frame
             self.custom_frames[str(F)[15:-2]] = custom
 
         self.nbk.grid(row=1, column=1, sticky='nsew', padx=(0, 20), pady=(20, 18))
@@ -93,20 +101,28 @@ class Window(Tk):
         self.menubar = Menu(self)
 
         filemenu = Menu(self.menubar, tearoff=0)
-        filemenu.add_command(label="New Process", command=lambda: self.show_frame('FormPage'))
+        filemenu.add_command(label="New Process",
+                             command=lambda: self.show_frame('FormPage'))
         filemenu.add_command(label="Convert", command=self.convert)
 
         filemenu.add_separator()
 
         settingsmenu = Menu(filemenu, tearoff=0)
-        settingsmenu.add_command(label="Change Color", command=self.change_color)
-        settingsmenu.add_command(label="Import Settings", command=self.custom_frames['AdvancedPage'].import_settings)
-        settingsmenu.add_command(label="Save Settings", command=self.custom_frames['AdvancedPage'].save_settings)
+        settingsmenu.add_command(label="Change Color",
+                                 command=self.change_color)
+
+        advanced_page_ = self.custom_frames['AdvancedPage']
+        settingsmenu.add_command(label="Import Settings",
+                                 command=advanced_page_.import_settings)
+        settingsmenu.add_command(label="Save Settings",
+                                 command=advanced_page_.save_settings)
         filemenu.add_cascade(label="Settings", menu=settingsmenu)
 
         entriesmenu = Menu(filemenu, tearoff=0)
-        entriesmenu.add_command(label="Import Entries")
-        entriesmenu.add_command(label="Save Entries")
+        entriesmenu.add_command(label="Import Entries",
+                                command=advanced_page_.import_entries)
+        entriesmenu.add_command(label="Save Entries",
+                                command=advanced_page_.save)
         filemenu.add_cascade(label="Entries", menu=entriesmenu)
 
         self.menubar.add_cascade(label="File", menu=filemenu)  # index = 0
@@ -128,7 +144,8 @@ class Window(Tk):
         self.menubar.add_cascade(label="View", menu=viewmenu)  # index = 2
 
         runmenu = Menu(self.menubar, tearoff=0)
-        runmenu.add_command(label="Run Process", command=lambda: main.get_entries(self))
+        runmenu.add_command(label="Run Process",
+                            command=lambda: main.get_entries(self))
         runmenu.add_command(label="Save and Stop", command=self.save_and_quit)
         runmenu.add_command(label="Stop", command=self.complete)
         runmenu.add_command(label="Exit", command=sys.exit)
@@ -139,8 +156,9 @@ class Window(Tk):
         self.menubar.add_cascade(label="Graph", menu=graphmenu)
 
         advancedmenu = Menu(self.menubar, tearoff=0)
-        advancedmenu.add_command(label="Options", command=lambda: self.show_frame('AdvancedPage'))
-        self.menubar.add_cascade(label="Advanced", menu=advancedmenu)  # index = 3
+        advancedmenu.add_command(label="Options", command=
+                                 lambda: self.show_frame('AdvancedPage'))
+        self.menubar.add_cascade(label="Advanced", menu=advancedmenu)
 
         self.config(menu=self.menubar)
         self.menubar.bind('<<MenuSelect>>', self.status_bar_update)
@@ -151,7 +169,8 @@ class Window(Tk):
 
         self.popup = Menu(self, tearoff=0)
         self.popup.add_command(label='Close', command=self.close_tab)
-        self.popup.add_command(label='Open All Tabs', command=self.open_all_tabs)
+        self.popup.add_command(label='Open All Tabs',
+                               command=self.open_all_tabs)
         self.popup_index = None
 
         self.frame_indexes = {}
@@ -174,7 +193,8 @@ class Window(Tk):
             self.status_bar.set("Ready")
 
     def show_frame(self, cont):
-        if cont == 'AdvancedPage' and str(self.frames['FormPage']) not in self.nbk.tabs():
+        if cont == 'AdvancedPage' and \
+                        str(self.frames['FormPage']) not in self.nbk.tabs():
             self.show_frame('FormPage')
         if str(self.frames[cont]) not in self.nbk.tabs():
             self.add_frame(cont)
@@ -196,7 +216,9 @@ class Window(Tk):
                 self.popup.grab_release()
 
     def close_tab(self):
-        if self.nbk.index('end') > 1 and self.popup_index is not None:  # if there is more than one tab open
+
+        # if there is more than one tab open
+        if self.nbk.index('end') > 1 and self.popup_index is not None:
             self.nbk.hide(self.popup_index)
             self.popup_index = None
 
@@ -223,22 +245,23 @@ class Window(Tk):
         self.update_color()
 
         self.custom_frames['FormPage'].set_filename("Select file...")
-        main.filename = None
+        main.form_elements['filename'] = None
         self.custom_frames['FormPage'].ents["Email"].delete(0, END)
         self.custom_frames['FormPage'].ents["Keywords"].delete(0, END)
         self.custom_frames['FormPage'].v2.set("Select file...")
-        main.save_as_name = None
+        main.form_elements['filename'] = None
 
-        self.custom_frames['AdvancedPage'].auto_manual_columns.set('AUTO')
-        self.custom_frames['AdvancedPage'].symbol_col.delete(0, END)
-        self.custom_frames['AdvancedPage'].symbol_col.config(state='disabled')
-        self.custom_frames['AdvancedPage'].synonyms_col.delete(0, END)
-        self.custom_frames['AdvancedPage'].synonyms_col.config(state='disabled')
-        self.custom_frames['AdvancedPage'].v.set("ALL")
-        self.custom_frames['AdvancedPage'].entry.delete(0, END)
-        self.custom_frames['AdvancedPage'].entry.config(state="disabled")
-        self.custom_frames['AdvancedPage'].desc.set(0)
-        self.custom_frames['AdvancedPage'].sort.set(0)
+        advanced_page_ = self.custom_frames['AdvancedPage']
+        advanced_page_.auto_manual_columns.set('AUTO')
+        advanced_page_.symbol_col.delete(0, END)
+        advanced_page_.symbol_col.config(state='disabled')
+        advanced_page_.synonyms_col.delete(0, END)
+        advanced_page_.synonyms_col.config(state='disabled')
+        advanced_page_.v.set("ALL")
+        advanced_page_.entry.delete(0, END)
+        advanced_page_.entry.config(state="disabled")
+        advanced_page_.desc.set(0)
+        advanced_page_.sort.set(0)
 
     def convert(self):
         root = ConvertPrompt(self)
@@ -278,7 +301,8 @@ class ConvertPrompt(Toplevel):
         lab = Label(self, text="Text file: ")
         lab.grid(row=1, column=0, padx=5)
 
-        self.v_display = StringVar()  # this stores the displayed version of the filename
+        # this stores the displayed version of the filename
+        self.v_display = StringVar()
         b1 = ttk.Button(self, text="Browse...", command=self.askopenfilename)
         b1.grid(row=1, column=1, padx=5)
         self.geometry('190x80+300+300')
@@ -299,8 +323,11 @@ class ConvertPrompt(Toplevel):
         save_name = file[:-4] + '.xlsx'
         try:
             converted_wb.save(save_name)
-        except PermissionError:  # if the user tries to save it in C: or somewhere inaccessible
-            converted_wb.save(save_name.split('/')[-1])  # it will be saved in the current directory
+
+        # if the user tries to save it in C: or somewhere inaccessible
+        except PermissionError:
+            # it will be saved in the current directory
+            converted_wb.save(save_name.split('/')[-1])
         self.master.show_frame('FormPage')
         self.master.custom_frames['FormPage'].set_filename(save_name)
 
@@ -336,12 +363,19 @@ class OptionsBar(Frame):
         Frame.__init__(self, parent, *args, **kwargs)
         self.controller = controller
 
-        self.b1, self.photo = self.button_from_label("Info", ".\images\Information.png", self.info_button,
-                                                     "Get information and help about new features")
+        info_image = ".\images\Information.png"
+        self.b1, self.photo = self.button_from_label("Info",
+                                                     info_image,
+                                                     self.info_button,
+                                                     "Get information and help"
+                                                     " about new features")
         self.b1.grid(row=0, padx=(20, 0), pady=15)
 
-        self.b2, self.photo2 = self.button_from_label("New", ".\images\Search.png", self.new_button,
-                                                      "Process another input file to get citations.")
+        self.b2, self.photo2 = self.button_from_label("New",
+                                                      ".\images\Search.png",
+                                                      self.new_button,
+                                                      "Process another input "
+                                                      "file to get citations.")
         self.b2.grid(row=1, padx=(20, 0), pady=15)
 
     def button_from_label(self, text, image_url, cmd, status):
@@ -358,8 +392,9 @@ class OptionsBar(Frame):
         btn.bind('<Button-1>', cmd)
         btn.bind('<Enter>', lambda e: (btn.config(bg='light cyan'),
                                        self.controller.status_bar.set(status)))
-        btn.bind('<Leave>', lambda e: (btn.config(bg=NOTEBOOK_COLOR),
-                                       self.controller.status_bar.set('Ready')))
+        btn.bind('<Leave>', lambda e:
+                 (btn.config(bg=NOTEBOOK_COLOR),
+                  self.controller.status_bar.set('Ready')))
         btn.bind('<ButtonRelease-1>', lambda e: btn.config(bg='light cyan'))
         return btn, photo
 
@@ -382,14 +417,18 @@ class StartPage(Frame):
         self.controller = controller
         self.previous_color = controller.bg_color
 
-        lab = Label(self, text="Welcome to BioDataSorter", font=HEAD, background=NOTEBOOK_COLOR, cursor='heart')
+        lab = Label(self, text="Welcome to BioDataSorter", font=HEAD,
+                    background=NOTEBOOK_COLOR, cursor='heart')
         lab.grid(row=0, padx=padding_x, pady=padding_y)
         lab.bind('<Button-1>', self.surprise_color)
-        lab.bind('<Leave>', lambda e: (controller.change_color(self.previous_color),  # current color is reset
-                                       controller.status_bar.set('Ready')))
+        lab.bind('<Leave>', lambda e:
+                 # current color is reset
+                 (controller.change_color(self.previous_color),
+                  controller.status_bar.set('Ready')))
 
         get_started = Label(self,
-                            text="Click New to get started or File>Convert \n a text file from GEO profile data.",
+                            text="Click New to get started or File>Convert \n "
+                                 "a text file from GEO profile data.",
                             background='white',
                             font=FONT)
         get_started.grid(row=1, pady=(0, 85))
@@ -401,9 +440,12 @@ class StartPage(Frame):
         self.github_link = "https://github.com/BioDataSorter/BioDataSorter"
 
         self.copy_link_popup = Menu(controller, tearoff=0)
+        cb_append = controller.clipboard_append
         self.copy_link_popup.add_command(label='Copy Link',
-                                         command=lambda: controller.clipboard_append(self.github_link))
-        self.copy_link_popup.add_command(label='Open Link in Browser', command=self.launch_page)
+                                         command=lambda:
+                                         cb_append(self.github_link))
+        self.copy_link_popup.add_command(label='Open Link in Browser',
+                                         command=self.launch_page)
 
         lab2 = Label(self,
                      text="Visit our GitHub repository for more information",
@@ -412,7 +454,8 @@ class StartPage(Frame):
                      font=underline)
         lab2.grid(row=3)
         lab2.bind('<Enter>', lambda e: (lab2.config(foreground='blue'),
-                                        controller.status_bar.set(self.github_link)))
+                                        controller.status_bar.set(
+                                            self.github_link)))
         lab2.bind('<Leave>', lambda e: (lab2.config(foreground='black'),
                                         controller.status_bar.set('Ready')))
         lab2.bind('<Button-1>', self.launch_page)
@@ -428,7 +471,9 @@ class StartPage(Frame):
 
     def on_button_3(self, event):
         try:
-            self.copy_link_popup.tk_popup(event.x_root + 75, event.y_root + 11, 0)
+            self.copy_link_popup.tk_popup(event.x_root + 75,
+                                          event.y_root + 11,
+                                          0)
         finally:
             self.copy_link_popup.grab_release()
 
@@ -448,53 +493,70 @@ class FormPage(Frame):
         options['title'] = "Choose a file"
 
         self.popup = Menu(controller, tearoff=0)
-        self.popup.add_command(label='Run', command=lambda: main.get_entries(controller))
-        self.popup.add_command(label='More Options', command=lambda: controller.show_frame('AdvancedPage'))
+        self.popup.add_command(label='Run',
+                               command=lambda: main.get_entries(controller))
+        self.popup.add_command(label='More Options',
+                               command=lambda:
+                               controller.show_frame('AdvancedPage'))
 
         self.popup.add_separator()
+        advanced_page_ = controller.custom_frames['AdvancedPage']
         self.popup.add_command(label='Import Entries',
-                               command=controller.custom_frames['AdvancedPage'].import_entries)
+                               command=advanced_page_.import_entries)
         self.popup.add_command(label='Save Entries',
-                               command=controller.custom_frames['AdvancedPage'].save)
+                               command=advanced_page_.save)
 
         self.grid_columnconfigure(0, weight=1)
 
         lab = Label(self, text="File: ", background=NOTEBOOK_COLOR)
         lab.grid(row=0, column=0, sticky=W, padx=5, pady=5)
-        b1 = ttk.Button(self, text="Browse...", cursor='hand2', command=self.askopenfilename)
+        b1 = ttk.Button(self,
+                        text="Browse...",
+                        cursor='hand2',
+                        command=self.askopenfilename)
         b1.grid(row=0, column=2, sticky=E, padx=5, pady=5)
         self.ents, make_form_widgets = make_form(self, 1, ['Email', 'Keywords'])
 
-        make_form_widgets[-1].bind('<Return>', lambda e: main.get_entries(controller))
+        make_form_widgets[-1].bind('<Return>',
+                                   lambda e: main.get_entries(controller))
 
         lab2 = Label(self, text="Save As: ", background=NOTEBOOK_COLOR)
         lab2.grid(row=3, column=0, sticky=W, padx=5, pady=5)
 
-        b2 = ttk.Button(self, text="Browse...", cursor='hand2', command=self.asksaveasfilename)
+        b2 = ttk.Button(self,
+                        text="Browse...",
+                        cursor='hand2',
+                        command=self.asksaveasfilename)
         b2.grid(row=3, column=2, sticky=E, padx=5, pady=5)
 
         self.v = StringVar()  # input file name
         self.v_display = StringVar()
         self.set_filename("Select file...")
-        lab3 = Label(self, textvariable=self.v_display, background=NOTEBOOK_COLOR)
+        lab3 = Label(self, textvariable=self.v_display,
+                     background=NOTEBOOK_COLOR)
         lab3.grid(row=0, column=1, padx=5, pady=5)
         lab3.bind('<Enter>', lambda e: controller.status_bar.set(self.v.get()))
         lab3.bind('<Leave>', lambda e: controller.status_bar.set('Ready'))
 
         self.v2 = StringVar()  # save as name
         self.v2_display = StringVar()
-        self.set_saveasname("Select file...")
-        lab4 = Label(self, textvariable=self.v2_display, background=NOTEBOOK_COLOR)
+        self.set_savename("Select file...")
+        lab4 = Label(self, textvariable=self.v2_display,
+                     background=NOTEBOOK_COLOR)
         lab4.grid(row=3, column=1, padx=5, pady=5)
-        lab4.bind('<Enter>', lambda e: controller.status_bar.set(self.v2.get()))
+        lab4.bind('<Enter>',
+                  lambda e: controller.status_bar.set(self.v2.get()))
         lab4.bind('<Leave>', lambda e: controller.status_bar.set('Ready'))
 
         buttons_frame = Frame(self, background=NOTEBOOK_COLOR)
         buttons_frame.grid(row=6, columnspan=3, pady=(25, 0))
 
         options_button = ttk.Button(buttons_frame, text="More Options",
-                                    command=lambda: controller.show_frame('AdvancedPage'))
-        self.run_button = ttk.Button(buttons_frame, text="Run", command=lambda: main.get_entries(controller))
+                                    command=lambda:
+                                    controller.show_frame('AdvancedPage'))
+        self.run_button = ttk.Button(buttons_frame, text="Run",
+                                     command=lambda:
+                                     main.get_entries(controller))
         options_button.grid(row=0, column=0, padx=5, pady=10, sticky=S)
         self.run_button.grid(row=0, column=1, padx=5, pady=10, sticky=S)
 
@@ -507,14 +569,14 @@ class FormPage(Frame):
     def askopenfilename(self):
         file = tkinter.filedialog.askopenfilename(**self.file_opt)
         if file:
-            main.filename = file
+            main.form_elements['filename'] = file
             self.set_filename(file)
 
     def asksaveasfilename(self):
         file = tkinter.filedialog.asksaveasfile(**self.file_opt)
         if file:
-            main.save_as_name = file.name
-            self.set_saveasname(file.name)
+            main.form_elements['save_as_name'] = file.name
+            self.set_savename(file.name)
 
     def on_button_3(self, event):
         try:
@@ -530,7 +592,7 @@ class FormPage(Frame):
         else:
             self.v_display.set(string)
 
-    def set_saveasname(self, string):
+    def set_savename(self, string):
         self.v2.set(string)
         string = string.split('/')[-1]
         if len(string) > 20:
@@ -554,7 +616,10 @@ class AdvancedPage(Frame):
         s.configure("White.TRadiobutton", background=NOTEBOOK_COLOR)
         s.configure("White.TCheckbutton", background=NOTEBOOK_COLOR)
 
-        get_columns_lab = Label(self, text="'Gene Symbol' and 'Gene Title' Column Letters:", background=NOTEBOOK_COLOR)
+        get_columns_lab = Label(self,
+                                text="'Gene Symbol' and 'Gene Title' Column "
+                                     "Letters:",
+                                background=NOTEBOOK_COLOR)
         get_columns_lab.grid(row=0, columnspan=3, pady=5)
 
         self.auto_manual_columns = StringVar()
@@ -574,41 +639,59 @@ class AdvancedPage(Frame):
         rb_auto.grid(row=1, column=0)
         rb_manual.grid(row=1, column=1, sticky=E)
 
-        self.symbol_col = ttk.Entry(self, width=17, state='disabled', style='EntryStyle.TEntry')
+        self.symbol_col = ttk.Entry(self, width=17, state='disabled',
+                                    style='EntryStyle.TEntry')
         symbol_tags = self.symbol_col.bindtags() + ('columntag',)
         self.symbol_col.bindtags(symbol_tags)
         self.symbol_col.grid(row=1, column=2, sticky=W, padx=(0, 5))
 
-        self.synonyms_col = ttk.Entry(self, width=17, state='disabled', style='EntryStyle.TEntry')
+        self.synonyms_col = ttk.Entry(self, width=17, state='disabled',
+                                      style='EntryStyle.TEntry')
         synonyms_tags = self.synonyms_col.bindtags() + ('columntag',)
         self.synonyms_col.bindtags(synonyms_tags)
         self.synonyms_col.grid(row=2, column=2, sticky=W, padx=(0, 5), pady=5)
 
-        self.bind_class('columntag', '<FocusIn>', lambda e: e.widget.delete(0, END))
-        self.bind_class('columntag', '<FocusOut>', lambda e: self.manual_on_click())
+        self.bind_class('columntag', '<FocusIn>',
+                        lambda e: e.widget.delete(0, END))
+        self.bind_class('columntag', '<FocusOut>',
+                        lambda e: self.manual_on_click())
         self.bind_class('columntag', '<Button-1>', self.column_ents_click)
-        self.symbol_col.bind('<Enter>', lambda e: controller.status_bar.set("Change the 'Gene Symbol' or 'SYMBOL'" +
-                                                                            " column manually"))
-        self.synonyms_col.bind('<Enter>', lambda e: controller.status_bar.set("Change the 'Gene Title' or 'SYNONYMS'" +
-                                                                              " column manually"))
-        self.bind_class('columntag', '<Leave>', lambda e: controller.status_bar.set('Ready'))
+        self.symbol_col.bind('<Enter>',
+                             lambda e:
+                             controller.status_bar.set("Change the 'Gene "
+                                                       "Symbol' or 'SYMBOL'"
+                                                       " column manually"))
+        self.synonyms_col.bind('<Enter>', lambda e:
+                               controller.status_bar.set("Change the 'Gene "
+                                                         "Title' or 'SYNONYMS'"
+                                                         " column manually"))
+        self.bind_class('columntag', '<Leave>',
+                        lambda e: controller.status_bar.set('Ready'))
 
         separator = Frame(self, height=1, width=NOTEBOOK_WIDTH, bg='dark gray')
         separator.grid(row=3, columnspan=3, pady=(10, 0))
 
-        lab = Label(self, text="Number of Genes to Use:", background=NOTEBOOK_COLOR)
+        lab = Label(self, text="Number of Genes to Use:",
+                    background=NOTEBOOK_COLOR)
         lab.grid(row=4, columnspan=3, sticky=W, padx=5, pady=(10, 0))
 
         self.v = StringVar()
         self.v.set("ALL")
-        rb = ttk.Radiobutton(self, text="All", variable=self.v, value="ALL", command=self.disable_entry,
+        rb = ttk.Radiobutton(self, text="All", variable=self.v, value="ALL",
+                             command=self.disable_entry,
                              style="White.TRadiobutton")
-        rb2 = ttk.Radiobutton(self, text="Top x genes", variable=self.v, value="SELECT", command=self.enable_entry,
+        rb2 = ttk.Radiobutton(self, text="Top x genes", variable=self.v,
+                              value="SELECT", command=self.enable_entry,
                               style="White.TRadiobutton")
-        self.entry = ttk.Entry(self, width=10, state="disabled", style="EntryStyle.TEntry")
+        self.entry = ttk.Entry(self, width=10, state="disabled",
+                               style="EntryStyle.TEntry")
         self.entry.bind('<Button-1>', self.entry_click)
-        self.entry.bind('<Enter>', lambda e: controller.status_bar.set("Process only a portion of the spreadsheet."))
-        self.entry.bind('<Leave>', lambda e: controller.status_bar.set('Ready'))
+        self.entry.bind('<Enter>',
+                        lambda e:
+                        controller.status_bar.set("Process only a portion of "
+                                                  "the spreadsheet."))
+        self.entry.bind('<Leave>',
+                        lambda e: controller.status_bar.set('Ready'))
 
         rb.grid(row=5, column=0, sticky=W, padx=5, pady=5)
         rb2.grid(row=5, column=1, sticky=E, padx=5, pady=5)
@@ -619,19 +702,26 @@ class AdvancedPage(Frame):
 
         c = ttk.Checkbutton(self, text="Add descriptions", variable=self.desc, style="White.TCheckbutton")
         c.grid(row=6, column=0, columnspan=2, sticky=W, padx=5, pady=5)
-        c.bind('<Enter>', lambda e: controller.status_bar.set("Get descriptions of the gene symbols from PubMed."))
+        c.bind('<Enter>',
+               lambda e: controller.status_bar.set("Get descriptions of the "
+                                                   "gene symbols from "
+                                                   "PubMed."))
         c.bind('<Leave>', lambda e: controller.status_bar.set('Ready'))
 
-        c2 = ttk.Checkbutton(self, text="Sort", variable=self.sort, style="White.TCheckbutton")
+        c2 = ttk.Checkbutton(self, text="Sort", variable=self.sort,
+                             style="White.TCheckbutton")
         c2.grid(row=6, column=2, sticky=W, padx=5, pady=5)
-        c2.bind('<Enter>', lambda e: controller.status_bar.set("Sort the output file by the total number of citations" +
-                                                               " found."))
+        c2.bind('<Enter>',
+                lambda e: controller.status_bar.set("Sort the output file by "
+                                                    "the total number of "
+                                                    "citations found."))
         c2.bind('<Leave>', lambda e: controller.status_bar.set('Ready'))
 
         buttons_frame = Frame(self, background=NOTEBOOK_COLOR)
         buttons_frame.grid(row=7, columnspan=3)
 
-        b1 = ttk.Button(buttons_frame, text="Import Entries", command=self.import_entries)
+        b1 = ttk.Button(buttons_frame, text="Import Entries",
+                        command=self.import_entries)
         b1.grid(row=0, column=0, padx=5, pady=5)
         b2 = ttk.Button(buttons_frame, text="Save Entries", command=self.save)
         b2.grid(row=0, column=1, padx=5, pady=5)
@@ -673,36 +763,51 @@ class AdvancedPage(Frame):
 
     def deselect_manual(self, event):
         disallowed = ['', 'Gene symbol Col', 'Gene title Col']
-        if self.symbol_col.get() in disallowed or self.synonyms_col.get() in disallowed:
+        if self.symbol_col.get() in disallowed or \
+                self.synonyms_col.get() in disallowed:
             self.auto_manual_columns.set('AUTO')
             self.disable_columns_ents()
 
     def save(self):
+        print("saving")
         sections = ['main', 'advanced']
         for section in sections:
             if not self.config.has_section(section):
                 self.config.add_section(section)
 
-        self.config.set("advanced", "Symbol Column", "AUTO" if self.auto_manual_columns.get() == "AUTO"
-                                    else self.symbol_col.get())
-        self.config.set("advanced", "Synonyms Column", "AUTO" if self.auto_manual_columns.get() == "AUTO"
-                                    else self.synonyms_col.get())
-        self.config.set("advanced", "Genes to Use", "ALL" if self.v.get() == "ALL" else self.entry.get())
+        self.config.set("advanced",
+                        "Symbol Column",
+                        "AUTO" if self.auto_manual_columns.get() == "AUTO"
+                        else self.symbol_col.get())
+        self.config.set("advanced",
+                        "Synonyms Column",
+                        "AUTO" if self.auto_manual_columns.get() == "AUTO"
+                        else self.synonyms_col.get())
+        self.config.set("advanced",
+                        "Genes to Use",
+                        "ALL" if self.v.get() == "ALL" else self.entry.get())
         self.config.set("advanced", "Descriptions", str(self.desc.get()))
         self.config.set("advanced", "Sort", str(self.sort.get()))
 
-        self.config.set("main", "Filename", '' if main.filename is None else main.filename)
-        self.config.set("main", "Email", self.controller.custom_frames["FormPage"].ents["Email"].get())
-        self.config.set("main", "Keywords", self.controller.custom_frames["FormPage"].ents["Keywords"].get())
-        self.config.set("main", "Save As", '' if main.save_as_name is None else main.save_as_name)
+        self.config.set("main", "Filename",
+                        '' if main.form_elements['filename'] is None
+                        else main.form_elements['filename'])
+        form_page_ = self.controller.custom_frames["FormPage"]
+        self.config.set("main", "Email",
+                        form_page_.ents["Email"].get())
+        self.config.set("main", "Keywords", form_page_.ents["Keywords"].get())
+        self.config.set("main", "Save As",
+                        '' if main.form_elements['save_as_name'] is None else
+                        main.form_elements['save_as_name'])
 
         with open("config.ini", "w") as f:
             self.config.write(f)
 
     def import_entries(self):
         try:
-            if self.config.get("advanced", "Symbol Column") == "AUTO" or \
-                    self.config.get("advanced", "Synonyms Column") == "AUTO":
+            config = self.config
+            if config.get("advanced", "Symbol Column") == "AUTO" or \
+                    config.get("advanced", "Synonyms Column") == "AUTO":
                 self.auto_manual_columns.set('AUTO')
                 self.symbol_col.delete(0, END)
                 self.symbol_col.configure(state='disabled')
@@ -712,13 +817,15 @@ class AdvancedPage(Frame):
                 self.auto_manual_columns.set('MANUAL')
                 self.symbol_col.config(state='normal')
                 self.symbol_col.delete(0, END)
-                self.symbol_col.insert(0, self.config.get("advanced", "Symbol Column"))
+                self.symbol_col.insert(0, config.get("advanced",
+                                                     "Symbol Column"))
 
                 self.synonyms_col.config(state='normal')
                 self.synonyms_col.delete(0, END)
-                self.synonyms_col.insert(0, self.config.get("advanced", "Synonyms Column"))
+                self.synonyms_col.insert(0, config.get("advanced",
+                                                       "Synonyms Column"))
 
-            if self.config.get("advanced", "Genes to Use") == "ALL":
+            if config.get("advanced", "Genes to Use") == "ALL":
                 self.v.set("ALL")
                 self.entry.delete(0, END)
                 self.entry.configure(state='disabled')
@@ -726,38 +833,48 @@ class AdvancedPage(Frame):
                 self.v.set("SELECT")
                 self.entry.config(state="normal")
                 self.entry.delete(0, END)
-                self.entry.insert(0, self.config.get("advanced", "Genes to Use"))
-            self.desc.set(int(self.config.get("advanced", "Descriptions")))
-            self.sort.set(int(self.config.get("advanced", "Sort")))
+                self.entry.insert(0, config.get("advanced",
+                                                "Genes to Use"))
+            self.desc.set(int(config.get("advanced", "Descriptions")))
+            self.sort.set(int(config.get("advanced", "Sort")))
 
-            main.filename = self.config.get("main", "Filename") if self.config.get("main", "Filename") != '' else None
-            self.controller.custom_frames["FormPage"].set_filename("Select file..."
-                                                                   if self.config.get("main", "Save As") == '' else
-                                                                   self.config.get("main", "Filename").split('/')[-1])
-            self.controller.custom_frames["FormPage"].ents["Email"].delete(0, END)
-            self.controller.custom_frames["FormPage"].ents["Email"].insert(0, self.config.get("main", "Email"))
-            self.controller.custom_frames["FormPage"].ents["Keywords"].delete(0, END)
-            self.controller.custom_frames["FormPage"].ents["Keywords"].insert(0, self.config.get("main", "Keywords"))
-            main.save_as_name = self.config.get("main", "Save As") if self.config.get("main", "Save As") != '' else None
-            self.controller.custom_frames["FormPage"].set_saveasname("Select file..."
-                                                                     if self.config.get("main", "Save As") == '' else
-                                                                     self.config.get("main", "Save As").split('/')[-1])
+            main.form_elements['filename'] = config.get("main", "Filename") \
+                if config.get("main", "Filename") != '' else None
+            form_page_ = self.controller.custom_frames["FormPage"]
+            form_page_.set_filename("Select file..."
+                                    if config.get("main", "Filename") == ''
+                                    else config.get("main",
+                                                    "Filename").split('/')[-1])
+            form_page_.ents["Email"].delete(0, END)
+            form_page_.ents["Email"].insert(0, config.get("main", "Email"))
+            form_page_.ents["Keywords"].delete(0, END)
+            form_page_.ents["Keywords"].insert(0, config.get("main",
+                                                             "Keywords"))
+            main.form_elements['save_as_name'] = config.get("main", "Save As")\
+                if config.get("main", "Save As") != '' else None
+            form_page_.set_savename("Select file..." if
+                                    config.get("main", "Save As") == ''
+                                    else config.get("main",
+                                                    "Save As").split('/')[-1])
 
         except (configparser.NoSectionError, configparser.NoOptionError) as e:
-            tkinter.messagebox.showerror(title="Outdated config.ini",
-                                         message="Config.ini file is invalid or outdated, please save settings again. "
-                                         + str(e))
+            messagebox.showerror(title="Outdated config.ini",
+                                 message="Config.ini file is invalid or "
+                                         "outdated, please save settings "
+                                         "again. " + str(e))
 
     def import_settings(self):
         try:
-            self.controller.change_color(self.config.get("settings", "Background Color"))
+            self.controller.change_color(self.config.get("settings",
+                                                         "Background Color"))
         except (configparser.NoSectionError, configparser.NoOptionError):
             pass
 
     def save_settings(self):
         if not self.config.has_section('settings'):
             self.config.add_section('settings')
-        self.config.set("settings", "Background Color", self.controller.bg_color)
+        self.config.set("settings", "Background Color",
+                        self.controller.bg_color)
         with open("config.ini", "w") as f:
             self.config.write(f)
 
@@ -770,14 +887,16 @@ class ProgressWin(Frame):
         self.tasks = ["Idle", "Getting counts", "Getting descriptions"]
         self.current_task = self.tasks[0]
 
-        self.pb = ttk.Progressbar(parent, orient='horizontal', length=400, mode='determinate')  # grid in start
-        self.pb.bind('<Enter>', lambda e: controller.status_bar.set(self.current_task))
+        self.pb = ttk.Progressbar(parent, orient='horizontal', length=400,
+                                  mode='determinate')  # grid in start
+        self.pb.bind('<Enter>',
+                     lambda e: controller.status_bar.set(self.current_task))
         self.pb.bind('<Leave>', lambda e: controller.status_bar.set('Ready'))
 
         self.items = 0  # number of queries searched so far
         self.total_items = 0  # the total number of queries to be searched
 
-    def start(self):  # inc is the number of keywords, which the progress bar will update by
+    def start(self):
         self.pb.grid(row=0)
         self.current_task = self.tasks[1]
         self.pb['value'] = 0
@@ -787,7 +906,8 @@ class ProgressWin(Frame):
     def load(self):
         self.items = main.pb_int
         self.pb['value'] = self.items
-        if main.form_elements['descriptions'] and main.pb_int > main.total_queries * 2 / 3:
+        if main.form_elements['descriptions'] and \
+                main.pb_int > main.total_queries * 2 / 3:
             self.current_task = self.tasks[2]
 
         if self.items < main.total_queries:
@@ -823,11 +943,18 @@ class OutputPage(Frame):
             image_url_text = image_url
         self.lab.config(text=image_url_text)
         self.lab.pack()
-        hover_key = HoverText(self.lab, "Color Key: Ratio Column\nRed:<0.01\nOrange:<0.05\nGreen:<0.1\nWhite:>=0.1")
-        self.wordcloud.bind('<Enter>', lambda e: (self.controller.status_bar.set(image_url),
-                                                  hover_key.enter(e)))
-        self.wordcloud.bind('<Leave>', lambda e: (self.controller.status_bar.set('Ready'),
-                                                  hover_key.leave(e)))
+        hover_key = HoverText(self.lab, "Color Key: Ratio Column\n"
+                                        "Red:<0.01\n"
+                                        "Orange:<0.05\n"
+                                        "Green:<0.1\n"
+                                        "White:>=0.1")
+        self.wordcloud.bind('<Enter>',
+                            lambda e:
+                            (self.controller.status_bar.set(image_url),
+                             hover_key.enter(e)))
+        self.wordcloud.bind('<Leave>',
+                            lambda e: (self.controller.status_bar.set('Ready'),
+                                       hover_key.leave(e)))
         self.wordcloud.bind('<Button-1>', lambda e: self.open_image(image_url))
         self.wordcloud.bind('<Motion>', hover_key.motion)
 
@@ -844,10 +971,12 @@ def make_form(frame, row_start, fields):
     entries = {}
     widgets = []
     for field in fields:
-        lab = Label(frame, text=field+": ", anchor='w', background=NOTEBOOK_COLOR)
+        lab = Label(frame, text=field+": ", anchor='w',
+                    background=NOTEBOOK_COLOR)
         ent = ttk.Entry(frame, style="Thistle.TEntry")
         lab.grid(row=row_start, column=0, sticky=W, padx=5, pady=5)
-        ent.grid(row=row_start, column=1, columnspan=2, sticky="nsew", padx=5, pady=5)
+        ent.grid(row=row_start, column=1, columnspan=2, sticky="nsew", padx=5,
+                 pady=5)
 
         widgets.extend([lab, ent])
         entries[field] = ent
@@ -856,6 +985,7 @@ def make_form(frame, row_start, fields):
 
 
 def add_tag(tag, args):
-    """Adds the tag parameter as a bind tag for the other parameters (widgets)"""
+    """Adds the tag parameter as a bind tag for the other parameters
+    (widgets)"""
     for widget in args:
         widget.bindtags((tag,) + widget.bindtags())
