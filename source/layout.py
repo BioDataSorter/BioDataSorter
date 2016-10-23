@@ -7,7 +7,6 @@ import tkinter.ttk as ttk
 import webbrowser
 import configparser
 import getpass
-import os
 
 import openpyxl
 from PIL import Image, ImageTk  # in project requirements as 'Pillow'
@@ -92,7 +91,8 @@ class Window(Tk):
             self.frames[str(F)[15:-2]] = frame
             self.custom_frames[str(F)[15:-2]] = custom
 
-        self.nbk.grid(row=1, column=1, sticky='nsew', padx=(0, 20), pady=(20, 18))
+        self.nbk.grid(row=1, column=1, sticky='nsew', padx=(0, 20), pady=(20,
+                                                                          18))
 
         # ========
         # MENU BAR
@@ -321,6 +321,8 @@ class ConvertPrompt(Toplevel):
         ws_input.title = 'Input'
         main.write_rows(split_rows, ws_input)
         save_name = file[:-4] + '.xlsx'
+        # TODO program gives error "select a file to sort" even though the
+        # words are displayed
         try:
             converted_wb.save(save_name)
 

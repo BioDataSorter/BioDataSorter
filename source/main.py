@@ -373,6 +373,7 @@ def set_info(ws, email, keywords, genes, root):
         ws.column_dimensions[_get_column_letter(col)].width = 16
         ws.cell(row=1, column=col).value = "COUNT RATIO"
         row = 2
+        # TODO ratio does not work check test14!!!
 
         # sorts all_counts so it matches the sorted file
         all_counts = sorted(all_counts, key=lambda el: int(el[0]))
@@ -417,7 +418,8 @@ def set_info(ws, email, keywords, genes, root):
     print("Done!")
     if messagebox.showinfo(title='Success',
                            message="Your file is located in "
-                                   + path.dirname(form_elements['filename'])
+                                   + path.dirname(
+                                       form_elements['save_as_name'])
                            ) == 'ok':
         root.bar.pb.grid_forget()
         root.custom_frames['FormPage'].run_button.config(state='enabled')
