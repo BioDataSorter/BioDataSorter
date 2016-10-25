@@ -67,12 +67,17 @@ def generate_word_cloud():
                      message="Empty cells in mandatory columns." +
                              run_again_msg)
             return
+
+        # should this be included? -> row[count_ratio_index] > 0
         if type(row[symbol_col]) == str and row[total_count_index] > 0 and \
+                row[count_ratio_index] > 0 and \
                 row[symbol_col] not in [symbol[0] for symbol in symbols]:
 
             # excludes the datetime rows
+            # creates a list of tuples (symbol, total count, ratio)
             symbols.append((row[symbol_col], int(row[total_count_index]),
                             row[count_ratio_index]))
+    symbols.sort(key=lambda x: x[2])
 
     cloud_width = len(symbols) * 2 if len(symbols) > 200 else 400
     cloud_height = len(symbols) if len(symbols) > 200 else 200
@@ -90,13 +95,29 @@ def generate_word_cloud():
 
 def set_color_scale(word, font_size, position, orientation, font_path,
                     random_state=None):
-    symbol_ratio = symbols[[symbol[0] for symbol in symbols].index(word)][2]
-    ratio_to_color = (
-        (0.01, "hsl(0, 80%, 50%)"),  # red
-        (0.05, "hsl(58, 80%, 60%)"),  # yellow
-        (0.1, "hsl(126, 80%, 60%)")  # green
-    )
-    ratio_to_color = OrderedDict(ratio_to_color)
-    for ratio_min in ratio_to_color:
-        if symbol_ratio < ratio_min:
-            return ratio_to_color[ratio_min]
+    quartile1 = round(len(symbols) / 4)
+    median = quartile1 * 2
+    quartile3 = quartile1 * 3
+    symbol_index = [symbol[0] for symbol in symbols].index(word)
+    if symbol_index < quartile1:
+        return "hsl(0, 80%, 50%)"
+    elif symbol_index < median:
+        return "hsl(58, 80%, 60%)"
+    elif symbol_index < quartile3:
+        return "hsl(126, 80%, 60%)"
+    else:
+        return "hsl(206, 100%, 50%)"
+        # if other symbols get returned that aren't red, yellow, green or blue
+        # they were not added to the symbol chart and processed through this
+        # function
+
+    # symbol_ratio = symbols[[symbol[0] for symbol in symbols].index(word)][2]
+    # ratio_to_color = (
+    #     (0.01, "hsl(0, 80%, 50%)"),  # red
+    #     (0.05, "hsl(58, 80%, 60%)"),  # yellow
+    #     (0.1, "hsl(126, 80%, 60%)")  # green
+    # )
+    # ratio_to_color = OrderedDict(ratio_to_color)
+    # for ratio_min in ratio_to_color:
+    #     if symbol_ratio < ratio_min:
+    #         return ratio_to_color[ratio_min]
