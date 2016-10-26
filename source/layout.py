@@ -946,10 +946,11 @@ class OutputPage(Frame):
         self.lab.config(text=image_url_text)
         self.lab.pack()
         hover_key = HoverText(self.lab, "Color Key: Ratio Column\n"
-                                        "Red:<0.01\n"
-                                        "Orange:<0.05\n"
-                                        "Green:<0.1\n"
-                                        "White:>=0.1")
+                                        "Red:First Quarter\n"
+                                        "Orange:Second Quarter\n"
+                                        "Green:Third Quarter\n"
+                                        "Blue:Fourth Quarter")
+        # TODO Add values of quartiles used as bounds ^
         self.wordcloud.bind('<Enter>',
                             lambda e:
                             (self.controller.status_bar.set(image_url),
