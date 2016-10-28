@@ -6,6 +6,7 @@
 - [ ] unittests
 - [ ] finish documentation
 - [ ] automatic creation of word cloud after data is processed
+- [ ] add options to toggle between full gene name and gene symbol for word cloud
 
 ## For future updates
 - [ ] automated downloading of Excel input from GEO
