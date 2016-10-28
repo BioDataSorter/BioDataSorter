@@ -43,7 +43,8 @@ program can be found in the [Sample Data folder](https://github.com/BioDataSorte
 4. Change the Synonyms Column to the input's *Synonyms* or *Gene Title* column letter  
 5. Select any other options you wish to include in your output  
 6. Click run in the Form page or from the Run Menu  
-7. Wait for the program to finish  
+7. Wait for the program to finish, which may take up to 20 minutes depending on the number of genes being processed  
+8. Use the *Word Cloud* option in the *Graph* menu to create a word cloud based on your output
 
 ## Contact Us
 Send us questions, constructive criticism, comments, and suggestions for features!
