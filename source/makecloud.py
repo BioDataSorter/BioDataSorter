@@ -40,7 +40,7 @@ def generate_word_cloud():
     if 'SYMBOL' in headers:  # Winthrop format
         symbol_col = headers.index('SYMBOL')
     elif 'Gene title' in headers:  # GEO format
-        symbol_col = headers.index('Gene title')
+        symbol_col = headers.index('Gene symbol')
     else:
         showinfo(title="Incorrect Output Format",
                  message="No 'SYMBOL' column or 'Gene title' "
@@ -68,7 +68,7 @@ def generate_word_cloud():
                              run_again_msg)
             return
 
-        # should this be included? -> row[count_ratio_index] > 0
+        # TODO cut off for total count for 0 ratio: 100 citations?
         if type(row[symbol_col]) == str and row[total_count_index] > 0 and \
                 row[count_ratio_index] > 0 and \
                 row[symbol_col] not in [symbol[0] for symbol in symbols]:
