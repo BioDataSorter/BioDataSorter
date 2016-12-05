@@ -4,6 +4,16 @@ All notable changes will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versifying](http://semver.org/).
 
+##[1.0.0]
+### Added
+
+### Changed
+- only includes nonzero values in the quartiles, but they remain in the wordcloud
+
+### Fixed
+- made notebook frame larger to accommodate previous Windows OSs
+- fixed positioning of the start page for above reason
+
 ##[Unreleased]
 ### Added
 - Convert function (found under file menu) to convert .txt files

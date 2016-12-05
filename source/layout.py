@@ -22,7 +22,7 @@ COURIER = ("Courier New", 12)
 WINDOW_WIDTH = 570
 WINDOW_HEIGHT = 400
 NOTEBOOK_WIDTH = 400
-NOTEBOOK_HEIGHT = 240
+NOTEBOOK_HEIGHT = 280
 
 NOTEBOOK_COLOR = 'white'
 
@@ -414,8 +414,8 @@ class StartPage(Frame):
     def __init__(self, parent, controller, *args, **kwargs):
         super(StartPage, self).__init__(parent, *args, **kwargs)
         # Frame.__init__(parent, *args, **kwargs)
-        padding_x = round(NOTEBOOK_WIDTH / 2 - 130)
-        padding_y = round(NOTEBOOK_HEIGHT / 3 - 60)
+        padding_x = round(NOTEBOOK_WIDTH / 7)
+        padding_y = round(NOTEBOOK_HEIGHT / 9)
         self.controller = controller
         self.previous_color = controller.bg_color
 
