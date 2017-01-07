@@ -1,7 +1,6 @@
 import tkinter.filedialog
 import tkinter.messagebox as messagebox
 import zipfile
-from collections import OrderedDict
 
 import wordcloud
 from openpyxl import *
@@ -10,12 +9,15 @@ import main
 
 symbols = None
 num_ratio_zero = None
+quartile1 = None
+median = None
+quartile3 = None
 
 
 def generate_word_cloud():
     """Creates a wordcloud showing the most optimal genes to study (low ratio,
      high count) large and in red."""
-    global symbols, num_ratio_zero
+    global symbols, num_ratio_zero, quartile1, median, quartile3
     _filename = main.form_elements['filename']
     initial_dir = _filename[:_filename.rfind('/')] \
         if _filename is not None else None
@@ -82,7 +84,7 @@ def generate_word_cloud():
     symbols.sort(key=lambda x: x[2])
 
     # number of symbols with 0 count ratio- will be excluded from quartiles
-    num_ratio_zero = len([symbol for symbol in symbols if symbol == 0])
+    num_ratio_zero = len([symbol for symbol in symbols if symbol[2] == 0])
 
     cloud_width = len(symbols) * 2 if len(symbols) > 200 else 400
     cloud_height = len(symbols) if len(symbols) > 200 else 200
@@ -91,7 +93,14 @@ def generate_word_cloud():
                                 height=cloud_height)
 
     # nothing actually wrong with this vvv
+    print("I am printing from makecloud.py")
     cloud.generate_from_frequencies(tuple([symbol[:2] for symbol in symbols]))
+
+    quarter_size = round((len(symbols) - num_ratio_zero) / 4)
+    quartile1 = num_ratio_zero + quarter_size
+    median = num_ratio_zero + quarter_size * 2
+    quartile3 = num_ratio_zero + quarter_size * 3
+
     cloud.recolor(color_func=set_color_scale)
     output_file = file[:-5] + '_wordcloud.png'
     cloud.to_file(output_file)
@@ -101,19 +110,15 @@ def generate_word_cloud():
 # recolors the word cloud based on the quartiles sorted by ratio size
 def set_color_scale(word, font_size, position, orientation, font_path,
                     random_state=None):
-    quarter_size = round(len(symbols) - num_ratio_zero / 4)
-    quartile1 = num_ratio_zero + quarter_size
-    median = num_ratio_zero + quarter_size * 2
-    quartile3 = num_ratio_zero + quarter_size * 3
     symbol_index = [symbol[0] for symbol in symbols].index(word)
     if symbol_index < quartile1:
-        return "hsl(0, 80%, 50%)"
+        return "hsl(0, 80%, 50%)"  # red
     elif symbol_index < median:
-        return "hsl(58, 80%, 60%)"
+        return "hsl(58, 80%, 60%)"  # orange
     elif symbol_index < quartile3:
-        return "hsl(126, 80%, 60%)"
+        return "hsl(126, 80%, 60%)"  # green
     else:
-        return "hsl(206, 100%, 50%)"
+        return "hsl(206, 100%, 50%)"  # blue
         # if other symbols get returned that aren't red, yellow, green or blue
         # they were not added to the symbol chart and processed through this
         # function (which they should have been)

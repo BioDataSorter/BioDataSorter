@@ -508,24 +508,27 @@ class FormPage(Frame):
         self.popup.add_command(label='Save Entries',
                                command=advanced_page_.save)
 
-        self.grid_columnconfigure(0, weight=1)
-
-        lab = Label(self, text="File: ", background=NOTEBOOK_COLOR)
+        # ===============Form buttons and text fields=========================
+        main_form = Frame(self, background=NOTEBOOK_COLOR,
+                          width=NOTEBOOK_WIDTH)
+        main_form.grid_columnconfigure(0, weight=1)
+        lab = Label(main_form, text="File: ", background=NOTEBOOK_COLOR)
         lab.grid(row=0, column=0, sticky=W, padx=5, pady=5)
-        b1 = ttk.Button(self,
+        b1 = ttk.Button(main_form,
                         text="Browse...",
                         cursor='hand2',
                         command=self.askopenfilename)
         b1.grid(row=0, column=2, sticky=E, padx=5, pady=5)
-        self.ents, make_form_widgets = make_form(self, 1, ['Email', 'Keywords'])
+        self.ents, make_form_widgets = make_form(main_form, 1,
+                                                 ['Email', 'Keywords'])
 
         make_form_widgets[-1].bind('<Return>',
                                    lambda e: main.get_entries(controller))
 
-        lab2 = Label(self, text="Save As: ", background=NOTEBOOK_COLOR)
+        lab2 = Label(main_form, text="Save As: ", background=NOTEBOOK_COLOR)
         lab2.grid(row=3, column=0, sticky=W, padx=5, pady=5)
 
-        b2 = ttk.Button(self,
+        b2 = ttk.Button(main_form,
                         text="Browse...",
                         cursor='hand2',
                         command=self.asksaveasfilename)
@@ -534,7 +537,7 @@ class FormPage(Frame):
         self.v = StringVar()  # input file name
         self.v_display = StringVar()
         self.set_filename("Select file...")
-        lab3 = Label(self, textvariable=self.v_display,
+        lab3 = Label(main_form, textvariable=self.v_display,
                      background=NOTEBOOK_COLOR)
         lab3.grid(row=0, column=1, padx=5, pady=5)
         lab3.bind('<Enter>', lambda e: controller.status_bar.set(self.v.get()))
@@ -543,15 +546,18 @@ class FormPage(Frame):
         self.v2 = StringVar()  # save as name
         self.v2_display = StringVar()
         self.set_savename("Select file...")
-        lab4 = Label(self, textvariable=self.v2_display,
+        lab4 = Label(main_form, textvariable=self.v2_display,
                      background=NOTEBOOK_COLOR)
         lab4.grid(row=3, column=1, padx=5, pady=5)
         lab4.bind('<Enter>',
                   lambda e: controller.status_bar.set(self.v2.get()))
         lab4.bind('<Leave>', lambda e: controller.status_bar.set('Ready'))
 
+        main_form.pack(fill=X)
+
+        # ===========bottom buttons "More Options" and "Run"==================
         buttons_frame = Frame(self, background=NOTEBOOK_COLOR)
-        buttons_frame.grid(row=6, columnspan=3, pady=(25, 0))
+        buttons_frame.pack(side=BOTTOM, pady=(0, 15))
 
         options_button = ttk.Button(buttons_frame, text="More Options",
                                     command=lambda:
