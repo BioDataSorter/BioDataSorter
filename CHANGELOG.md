@@ -4,6 +4,13 @@ All notable changes will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+##[1.0.2]
+### Changed
+- optimized imports for py2exe
+
+### Fixed
+- status bar
+
 ##[1.0.1]
 ### Changed
 - layout on form is evened out

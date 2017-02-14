@@ -28,21 +28,31 @@ Attributes:
         column_letters ([str]): A list of strings (one letter long for column
             letter or "AUTO") provided by the user of the symbol and synonyms
             columns. Are initialized as None.
+        num_genes  (int): The total number of genes to query. This is used to
+            get the total number of queries. It is multiplied by two or three
+            depending on the selection of the Descriptions box. This is also
+            initialized as None.
+        descriptions (bool): This is changed to True if the user checks the
+            descriptions box, but is false otherwise.
+        sort (bool): This is changed to True if the user checks the sort box,
+            but is false otherwise.
+
+
 
 """
 
-import datetime
+from datetime import datetime
+from socket import timeout
+from time import sleep
+from tkinter.messagebox import showwarning, showinfo, showerror
 from os import path
-import socket
 from threading import Thread
-import time
-import tkinter.messagebox as messagebox
 from tkinter import *
 from urllib import request
 from urllib.error import URLError
 
-import mygene
-import requests
+from mygene import MyGeneInfo
+from requests import get
 from Bio import Entrez
 from openpyxl import load_workbook
 from openpyxl.comments import Comment
@@ -93,14 +103,14 @@ def get_entries(root):
             # tries pubmed.gov ip
             request.urlopen('http://130.14.29.109', timeout=1)
             return True
-        except (URLError, socket.timeout) as err:
+        except (URLError, timeout) as err:
             print(str(err))
             return False
 
     if not internet_on():
-        messagebox.showwarning(title='Connect to internet',
-                               message="Make sure you are connected to "
-                                       "internet before starting.")
+        showwarning(title='Connect to internet',
+                          message="Make sure you are connected to "
+                          "internet before starting.")
         return
 
     form_page = root.custom_frames['FormPage']
@@ -112,26 +122,24 @@ def get_entries(root):
         if keywords_str != '' else []
 
     if form_elements['filename'] is None:
-        messagebox.showinfo(title='Error',
-                            message="Please select a file to sort.")
+        showinfo(title='Error', message="Please select a file to sort.")
         return
 
     # the input is turned into a list of keywords
     try:
         wb = try_file(form_elements['filename'])
     except TypeError:
-        messagebox.showinfo(title='Error',
-                            message="Unexpected spreadsheet type.")
+        showinfo(title='Error', message="Unexpected spreadsheet type.")
         return
     except FileNotFoundError as e:
-        messagebox.showinfo(title='Error', message=str(e))
+        showinfo(title='Error', message=str(e))
     ws = wb.active
     if advanced_page.v.get() == 'SELECT':
 
         if advanced_page.entry.get() == '' or not \
                 is_number(advanced_page.entry.get()):
-            messagebox.showinfo(title='Invalid input',
-                                message='Insert a number for \'Top x genes\'.')
+            showinfo(title='Invalid input',
+                     message='Insert a number for \'Top x genes\'.')
             return
         if int(advanced_page.entry.get()) >= ws.max_row:
             form_elements['num_genes'] = ws.max_row - 1
@@ -179,9 +187,9 @@ def get_entries(root):
             thread1.start()
             thread2.start()
         except Exception as e:
-            messagebox.showerror(title='Error',
-                                 message='The process was interrupted, but'
-                                         ' your file was saved.\n' + str(e))
+            showerror(title='Error',
+                      message='The process was interrupted, but your file was '
+                              'saved.\n' + str(e))
             if ".xlsx" == form_elements['save_as_name'][-5:]:
                 save_as = form_elements['save_as_name']
             else:
@@ -190,9 +198,8 @@ def get_entries(root):
             sys.exit()
 
     except (AttributeError, IndexError) as e:
-        messagebox.showinfo(title="Column Error",
-                            message="Check advanced page column input. \n" +
-                                    str(e))
+        showinfo(title="Column Error",
+                 message="Check advanced page column input. \n" + str(e))
 
 
 def try_file(user_input):
@@ -237,28 +244,25 @@ def remove_duplicates(ws):
         elif 'SYMBOL' in rows[0]:
             symbol_col_num = rows[0].index('SYMBOL')
         else:
-            messagebox.showinfo(title='Automatic column search could not find '
-                                      '"Gene symbol" or "SYMBOL" in '
-                                      'spreadsheet')
+            showinfo(title='Automatic column search could not find "Gene '
+                           'symbol" or "SYMBOL" in spreadsheet')
     else:
         symbol_letter = form_elements['column_letters'][0]
         if ' ' in symbol_letter:
-            messagebox.showinfo(title='Column Error',
-                                message="Check advanced page symbol column "
-                                        "input for spaces.")
+            showinfo(title='Column Error', message="Check advanced page symbol"
+                                                   " column input for spaces.")
             return
         elif any(char.isdigit() for char in symbol_letter):
-            messagebox.showinfo(title='Column Error',
-                                message="Check advanced page symbol column "
-                                        "input for numbers.")
+            showinfo(title='Column Error',
+                     message="Check advanced page symbol column input for "
+                             "numbers.")
             return
 
         # if every element in the column is None (empty)
         elif all(el is None for el in rows[ord(symbol_letter.lower()) - 97]):
-            messagebox.showinfo(title='Column Error',
-                                message="Check that the advanced page symbol "
-                                        "column input was in the range of the "
-                                        "spreadsheet.")
+            showinfo(title='Column Error',
+                     message="Check that the advanced page symbol column input"
+                             " was in the range of the spreadsheet.")
             return
         else:
             symbol_col_num = ord(symbol_letter.lower()) \
@@ -290,35 +294,34 @@ def get_aliases(gene_rows):
         elif 'SYNONYMS' in gene_rows[0]:
             synonyms_col_num = gene_rows[0].index('SYNONYMS')
         else:
-            messagebox.showinfo(title='Automatic column search could not find '
-                                      '"Gene symbol" or "SYMBOL" in '
-                                      'spreadsheet')
+            showinfo(title='Automatic column search could not find '
+                           '"Gene symbol" or "SYMBOL" in spreadsheet')
     else:
         if ' ' in form_elements['column_letters'][1]:
-            messagebox.showinfo(title='Column Error',
-                                message="Check advanced page symbol column "
-                                        "input for spaces.")
+            showinfo(title='Column Error', message="Check advanced page symbol"
+                                                   " column input for spaces.")
             return
-        elif any(char.isdigit() for char in form_elements['column_letters'][1]):
-            messagebox.showinfo(title='Column Error',
-                                message="Check advanced page symbol column "
-                                        "input for numbers.")
+        elif any(char.isdigit() for char in
+                 form_elements['column_letters'][1]):
+            showinfo(title='Column Error',
+                     message="Check advanced page symbol column input for "
+                             "numbers.")
             return
 
         # if every element in the column is None (empty)
         elif all(el is None for el in
                  [row[ord(form_elements['column_letters'][1].lower()) - 97]
                   for row in gene_rows]):
-            messagebox.showinfo(title='Column Error',
-                                message="Check that the advanced page symbol "
-                                        "column input was in the range of the "
-                                        "spreadsheet.")
+            showinfo(title='Column Error',
+                     message="Check that the advanced page symbol column input"
+                             " was in the range of the spreadsheet.")
             return
         else:
-            synonyms_col_num = ord(form_elements['column_letters'][1].lower()) - 97
+            synonyms_col_num = ord(form_elements['column_letters'][1].lower())\
+                               - 97
     gene_aliases = []
     for gene in gene_rows[1:]:
-        if type(gene[symbol_col_num]) == datetime.datetime:
+        if type(gene[symbol_col_num]) == datetime:
             aliases = []
         else:
             # symbols column is added to the list of names
@@ -404,8 +407,7 @@ def set_info(ws, email, keywords, genes, root):
                         error_msg = ("Getting descriptions was interrupted by"
                                      " an error, but your spreadsheet was "
                                      "saved.")
-                        messagebox.showerror(title='Error',
-                                             message=error_msg)
+                        showerror(title='Error', message=error_msg)
                         print(str(e))
                         break
                 row += 1
@@ -416,11 +418,9 @@ def set_info(ws, email, keywords, genes, root):
     wb.save(form_elements['save_as_name'])
 
     print("Done!")
-    if messagebox.showinfo(title='Success',
-                           message="Your file is located in "
-                                   + path.dirname(
-                                       form_elements['save_as_name'])
-                           ) == 'ok':
+    if showinfo(title='Success',
+                message="Your file is located in " + path.dirname(
+                    form_elements['save_as_name'])) == 'ok':
         root.bar.pb.grid_forget()
         root.custom_frames['FormPage'].run_button.config(state='enabled')
         root.custom_frames['AdvancedPage'].b3.config(state='enabled')
@@ -465,20 +465,20 @@ def get_count(aliases, keywords, email):
         except URLError as e:
             print(str(e))
             # if PubMed blocks the queries then it waits 5 seconds and repeats
-            time.sleep(5)
+            sleep(5)
             try:
                 handle = Entrez.egquery(term=query)
             except Exception as e:
-                messagebox.showwarning(title="Error",
-                                       message=str(e)+" Your partial output "
-                                                      "has been saved.")
+                showwarning(title="Error",
+                            message=str(e)+" Your partial output "
+                            "has been saved.")
                 return counts
         print(query)
         record = Entrez.read(handle)
         for row in record["eGQueryResult"]:
             counts.append(row["Count"])
             break
-    time.sleep(.5)
+    sleep(.5)
     return counts
 
 
@@ -528,7 +528,7 @@ def sort_ws(rows):
 def get_summary(symbol):
     version = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; it; rv:1.8.1.11) ' \
               'Gecko/20071127 Firefox/2.0.0.11'
-    mg = mygene.MyGeneInfo()
+    mg = MyGeneInfo()
     try:
         entrez_id = mg.query('symbol:%s' % symbol,
                              species='human')['hits'][0]['entrezgene']
@@ -536,7 +536,7 @@ def get_summary(symbol):
         return "No entries found. (Entrez ID not found)"
 
     url = 'http://www.ncbi.nlm.nih.gov/gene/' + str(entrez_id)
-    response = requests.get(url, version)
+    response = get(url, version)
     html_output = response.text
 
     search_string_start = '<dt>Summary</dt>'

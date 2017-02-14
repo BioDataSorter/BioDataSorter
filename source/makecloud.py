@@ -91,9 +91,9 @@ def generate_word_cloud():
     cloud = wordcloud.WordCloud(max_words=int(len(symbols) / 2),
                                 max_font_size=100, width=cloud_width,
                                 height=cloud_height)
+                                # font_path="wordcloud/DroidSansMono.ttf",
 
     # nothing actually wrong with this vvv
-    print("I am printing from makecloud.py")
     cloud.generate_from_frequencies(tuple([symbol[:2] for symbol in symbols]))
 
     quarter_size = round((len(symbols) - num_ratio_zero) / 4)

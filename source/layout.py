@@ -20,7 +20,7 @@ FONT = ("Arial", 10)
 COURIER = ("Courier New", 12)
 
 WINDOW_WIDTH = 570
-WINDOW_HEIGHT = 400
+WINDOW_HEIGHT = 440
 NOTEBOOK_WIDTH = 400
 NOTEBOOK_HEIGHT = 280
 
@@ -49,6 +49,7 @@ class Window(Tk):
         self.container = Frame(self)
         self.container.pack(side='top', fill='both', expand=True)
 
+        # sub_container for options bar
         self.sub_container = Frame(self.container)
         self.sub_container.pack(side=TOP, expand=TRUE, fill=BOTH)
 
@@ -59,7 +60,8 @@ class Window(Tk):
 
         # pady 2nd param also controls status bar placement
         # if the window was resizable it would be placed incorrectly
-        self.pb_space.grid(row=7, columnspan=3, pady=(0, WINDOW_HEIGHT-350))
+        self.pb_space.grid(row=7, columnspan=3, pady=(40, WINDOW_HEIGHT -
+                                                      NOTEBOOK_HEIGHT - 150))
         self.bar = ProgressWin(self.pb_space, self)
 
         self.status_bar = StatusBar(self.container)
@@ -708,7 +710,8 @@ class AdvancedPage(Frame):
         self.desc = IntVar()  # if desc is 1, then it is checked
         self.sort = IntVar()  # if sort is 1, then it is checked
 
-        c = ttk.Checkbutton(self, text="Add descriptions", variable=self.desc, style="White.TCheckbutton")
+        c = ttk.Checkbutton(self, text="Add descriptions", variable=self.desc,
+                            style="White.TCheckbutton")
         c.grid(row=6, column=0, columnspan=2, sticky=W, padx=5, pady=5)
         c.bind('<Enter>',
                lambda e: controller.status_bar.set("Get descriptions of the "
