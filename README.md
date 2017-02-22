@@ -33,7 +33,7 @@ program can be found in the [Sample Data folder](https://github.com/BioDataSorte
     * Use pip to install the rest of the requirements  
         1. Make sure pip is in your environment variables' PATH variable as C:\Python34\Scripts\pip  
         2. In command prompt, navigate to the BioDataSorter repository and run <pre>python -m pip install -r requirements.txt</pre>
-        3. If this doesn't work, install each one separately (Pillow, openpyxl, requests, mygene) using <pre>python -m pip install _requirement_</pre>
+        3. If this doesn't work, install each one separately (Pillow, openpyxl, requests, mygene, wordcloud) using <pre>python -m pip install _requirement_</pre>
 
 ## Usage
 1. Click new and input data - the file would be the GEO file from the above instructions  
