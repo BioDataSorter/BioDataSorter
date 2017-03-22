@@ -150,56 +150,60 @@ def get_entries(root):
     if advanced_page.auto_manual_columns.get() == 'AUTO':
         form_elements['column_letters'] = 'AUTO'
     else:
-        form_elements['column_letters'] = [advanced_page.symbol_col,
-                                           advanced_page.synonyms_col]
+        form_elements['column_letters'] = [advanced_page.symbol_col.get(),
+                                           advanced_page.synonyms_col.get()]
     form_elements['descriptions'] = advanced_page.desc.get() == 1
     form_elements['sort'] = advanced_page.sort.get() == 1
 
-    advanced_page.b3.config(state="disabled")
+    # try:
+    rows = remove_duplicates(ws)
+    if not rows:
+        print("quit get_entries b/c rows is None")
+        return
+
+    # cuts down to the number of genes that the user wants
+    rows = rows[:form_elements['num_genes']+1]
+
+    # this is the column that TOTAL COUNT will be written in
+    total_count_col = ws.max_column
+    genes = get_aliases(rows)
+    form_elements['num_genes'] = len(genes)
+    print("Num genes: %d" % form_elements['num_genes'])
+    total_queries = form_elements['num_genes'] * 2
+    if advanced_page.desc.get() == 1:  # if the box is checked
+
+        # adds the number of comment queries
+        total_queries += form_elements['num_genes']
+    print("Total queries: %d" % total_queries)
+    ws = wb.create_sheet(title='Output', index=0)
+    write_rows(rows, ws)
+
     try:
-        rows = remove_duplicates(ws)
+        advanced_page.b3.config(state="disabled")
+        form_page.run_button.config(state='disabled')
+        thread1 = Thread(target=root.bar.start)
+        thread2 = Thread(target=lambda: set_info(ws,
+                                                 form_elements['email'],
+                                                 form_elements['keywords'],
+                                                 genes,
+                                                 root))
+        thread1.start()
+        thread2.start()
+    except Exception as e:
+        showerror(title='Error',
+                  message='The process was interrupted, but your file was '
+                          'saved.\n' + str(e))
+        if ".xlsx" == form_elements['save_as_name'][-5:]:
+            save_as = form_elements['save_as_name']
+        else:
+            save_as = form_elements['save_as_name'] + ".xlsx"
+        wb.save(save_as)
+        sys.exit()
 
-        # cuts down to the number of genes that the user wants
-        rows = rows[:form_elements['num_genes']+1]
 
-        # this is the column that TOTAL COUNT will be written in
-        total_count_col = ws.max_column
-        genes = get_aliases(rows)
-        form_elements['num_genes'] = len(genes)
-        print("Num genes: %d" % form_elements['num_genes'])
-        total_queries = form_elements['num_genes'] * 2
-        if advanced_page.desc.get() == 1:  # if the box is checked
-
-            # adds the number of comment queries
-            total_queries += form_elements['num_genes']
-        print("Total queries: %d" % total_queries)
-        ws = wb.create_sheet(title='Output', index=0)
-        write_rows(rows, ws)
-
-        try:
-            form_page.run_button.config(state='disabled')
-            thread1 = Thread(target=root.bar.start)
-            thread2 = Thread(target=lambda: set_info(ws,
-                                                     form_elements['email'],
-                                                     form_elements['keywords'],
-                                                     genes,
-                                                     root))
-            thread1.start()
-            thread2.start()
-        except Exception as e:
-            showerror(title='Error',
-                      message='The process was interrupted, but your file was '
-                              'saved.\n' + str(e))
-            if ".xlsx" == form_elements['save_as_name'][-5:]:
-                save_as = form_elements['save_as_name']
-            else:
-                save_as = form_elements['save_as_name'] + ".xlsx"
-            wb.save(save_as)
-            sys.exit()
-
-    except (AttributeError, IndexError) as e:
-        showinfo(title="Column Error",
-                 message="Check advanced page column input. \n" + str(e))
+    # except (AttributeError, IndexError) as e:
+    #     showinfo(title="Column Error",
+    #              message="Check advanced page column input. \n" + str(e))
 
 
 def try_file(user_input):
@@ -244,8 +248,10 @@ def remove_duplicates(ws):
         elif 'SYMBOL' in rows[0]:
             symbol_col_num = rows[0].index('SYMBOL')
         else:
-            showinfo(title='Automatic column search could not find "Gene '
-                           'symbol" or "SYMBOL" in spreadsheet')
+            showinfo(title="Column Error",
+                     message='Automatic column search could not find "Gene '
+                             'symbol" or "SYMBOL" in spreadsheet')
+            return
     else:
         symbol_letter = form_elements['column_letters'][0]
         if ' ' in symbol_letter:
@@ -294,8 +300,9 @@ def get_aliases(gene_rows):
         elif 'SYNONYMS' in gene_rows[0]:
             synonyms_col_num = gene_rows[0].index('SYNONYMS')
         else:
-            showinfo(title='Automatic column search could not find '
-                           '"Gene symbol" or "SYMBOL" in spreadsheet')
+            showinfo(title='Column Error',
+                     message='Automatic column search could not find '
+                             '"Gene symbol" or "SYMBOL" in spreadsheet')
     else:
         if ' ' in form_elements['column_letters'][1]:
             showinfo(title='Column Error', message="Check advanced page symbol"
@@ -327,7 +334,7 @@ def get_aliases(gene_rows):
             # symbols column is added to the list of names
             aliases = gene[symbol_col_num].split('///')
         if gene[synonyms_col_num] is not None:
-            synonyms = gene[synonyms_col_num].split("; ")
+            synonyms = str(gene[synonyms_col_num]).split("; ")  #AttributeError: 'datetime.datetime' object has no attribute 'split'
             aliases.extend(synonyms)
         gene_aliases.append(aliases)
     return gene_aliases

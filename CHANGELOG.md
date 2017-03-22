@@ -4,6 +4,14 @@ All notable changes will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+##[2.0.1]
+### Fixed
+- Column Error message boxes no longer display the message as the title
+- form_elements now contains manually inputted column names as a list of strings
+
+### Removed
+- extra exception catcher for columns because of existing test in remove_duplicates
+
 ##[1.0.2]
 ### Changed
 - optimized imports for py2exe
