@@ -4,7 +4,21 @@ All notable changes will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-##[2.0.1]
+## [2.0.2]
+### Added
+- locate_columns method and col_nums global variable to consolidate information
+- GUI_DEBUG global variable in layout.py to pass update_color during debugging
+- key in the progress bar space
+
+### Fixed
+- error message about manual synonyms column input corrected
+- status bar will always align with bottom of window (added anchor=s)
+
+### Removed
+- wordcloud debugging print statements that locate DroidSansMono.ttf
+- hovering key over wordcloud
+
+## [2.0.1]
 ### Fixed
 - Column Error message boxes no longer display the message as the title
 - form_elements now contains manually inputted column names as a list of strings
@@ -12,21 +26,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Removed
 - extra exception catcher for columns because of existing test in remove_duplicates
 
-##[1.0.2]
+## [1.0.2]
 ### Changed
 - optimized imports for py2exe
 
 ### Fixed
 - status bar
 
-##[1.0.1]
+## [1.0.1]
 ### Changed
 - layout on form is evened out
 
 ## Fixed
 - all colors show up in wordcloud run from source (not just red)
 
-##[1.0.0]
+## [1.0.0]
 ### Changed
 - only includes nonzero values in the quartiles, but they remain in the wordcloud
 
@@ -34,7 +48,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - made notebook frame larger to accommodate previous Windows OSs
 - fixed positioning of the start page for above reason
 
-##[Unreleased]
+## [Unreleased]
 ### Added
 - Convert function (found under file menu) to convert .txt files
 generated from GEO profile data to .xlsx files

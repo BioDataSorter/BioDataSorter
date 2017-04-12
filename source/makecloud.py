@@ -1,6 +1,7 @@
 import tkinter.filedialog
 import tkinter.messagebox as messagebox
 import zipfile
+import collections
 
 import wordcloud
 from openpyxl import *
@@ -12,6 +13,10 @@ num_ratio_zero = None
 quartile1 = None
 median = None
 quartile3 = None
+quartiles = collections.OrderedDict([('red', "hsl(0, 80%, 50%)"),
+                                     ('yellow', "hsl(58, 80%, 60%)"),
+                                     ('green', "hsl(126, 80%, 60%)"),
+                                     ('blue', "hsl(206, 100%, 50%)")])
 
 
 def generate_word_cloud():
@@ -111,13 +116,13 @@ def set_color_scale(word, font_size, position, orientation, font_path,
                     random_state=None):
     symbol_index = [symbol[0] for symbol in symbols].index(word)
     if symbol_index < quartile1:
-        return "hsl(0, 80%, 50%)"  # red
+        return quartiles['red']  # red
     elif symbol_index < median:
-        return "hsl(58, 80%, 60%)"  # orange
+        return quartiles['yellow']  # yellow
     elif symbol_index < quartile3:
-        return "hsl(126, 80%, 60%)"  # green
+        return quartiles['green']  # green
     else:
-        return "hsl(206, 100%, 50%)"  # blue
+        return quartiles['blue']  # blue
         # if other symbols get returned that aren't red, yellow, green or blue
         # they were not added to the symbol chart and processed through this
         # function (which they should have been)

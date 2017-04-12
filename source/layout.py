@@ -13,7 +13,7 @@ from PIL import Image, ImageTk  # in project requirements as 'Pillow'
 
 import main
 import makecloud
-from HoverInfo import HoverText
+# from HoverInfo import HoverText
 
 HEAD = ("Arial", 16)
 FONT = ("Arial", 10)
@@ -25,6 +25,8 @@ NOTEBOOK_WIDTH = 400
 NOTEBOOK_HEIGHT = 280
 
 NOTEBOOK_COLOR = 'white'
+
+GUI_DEBUG = False
 
 
 class Window(Tk):
@@ -56,16 +58,23 @@ class Window(Tk):
         self.side_bar = OptionsBar(self.sub_container, self)
         self.side_bar.grid(column=0, rowspan=3, padx=(10, 0), pady=10)
 
-        self.pb_space = Frame(self.sub_container, height=24, width=400)
+        self.pb_space = Frame(self.sub_container, {'height': 50,
+                                                   'width': 500,
+                                                   'background': 'red'})
 
         # pady 2nd param also controls status bar placement
         # if the window was resizable it would be placed incorrectly
-        self.pb_space.grid(row=7, columnspan=3, pady=(40, WINDOW_HEIGHT -
+        self.pb_space.grid(row=7, columnspan=3, pady=(15, WINDOW_HEIGHT -
                                                       NOTEBOOK_HEIGHT - 150))
+        self.pb_space.pack_propagate(0)
+        self.key = Key(self.pb_space, {'background': 'white',
+                                       'highlightthickness': '4',
+                                       'highlightcolor': 'gray90'})
+
         self.bar = ProgressWin(self.pb_space, self)
 
         self.status_bar = StatusBar(self.container)
-        self.status_bar.pack(side="bottom", fill=X, expand=True)
+        self.status_bar.pack(side="bottom", fill=X, expand=True, anchor='s')
         self.status_bar.set("Ready")
 
         # =================
@@ -94,7 +103,7 @@ class Window(Tk):
             self.custom_frames[str(F)[15:-2]] = custom
 
         self.nbk.grid(row=1, column=1, sticky='nsew', padx=(0, 20), pady=(20,
-                                                                          18))
+                                                                          5))
 
         # ========
         # MENU BAR
@@ -237,10 +246,11 @@ class Window(Tk):
         self.update_color()
 
     def update_color(self):
-        self.side_bar['bg'] = self.bg_color
-        self.container['bg'] = self.bg_color
-        self.sub_container['bg'] = self.bg_color
-        self.pb_space['bg'] = self.bg_color
+        if not GUI_DEBUG:
+            self.side_bar['bg'] = self.bg_color
+            self.container['bg'] = self.bg_color
+            self.sub_container['bg'] = self.bg_color
+            self.pb_space['bg'] = self.bg_color
 
     def reset(self):
         self.bg_color = 'powder blue'
@@ -273,6 +283,10 @@ class Window(Tk):
         output_file = makecloud.generate_word_cloud()
         self.show_frame('OutputPage')
         self.custom_frames['OutputPage'].display_image(output_file)
+
+    def show_key(self):
+        self.key.fill_in()
+        self.key.pack(side='bottom', fill='both', expand=True)
 
     @staticmethod
     def complete():
@@ -424,7 +438,7 @@ class StartPage(Frame):
         lab = Label(self, text="Welcome to BioDataSorter", font=HEAD,
                     background=NOTEBOOK_COLOR, cursor='heart')
         lab.grid(row=0, padx=padding_x, pady=padding_y)
-        lab.bind('<Button-1>', self.surprise_color)
+        # lab.bind('<Button-1>', self.surprise_color)
         lab.bind('<Leave>', lambda e:
                  # current color is reset
                  (controller.change_color(self.previous_color),
@@ -908,7 +922,7 @@ class ProgressWin(Frame):
         self.total_items = 0  # the total number of queries to be searched
 
     def start(self):
-        self.pb.grid(row=0)
+        self.pb.pack()
         self.current_task = self.tasks[1]
         self.pb['value'] = 0
         self.pb['maximum'] = main.total_queries
@@ -926,6 +940,15 @@ class ProgressWin(Frame):
 
 
 class OutputPage(Frame):
+    """Frame within the notebook that displays the wordcloud output.
+    
+    Attributes:
+        parent (ttk.Frame): The frame within the notebook window. It is
+            organized by pack after each page is initialized.
+        controller (Window): The overall frame containing all of the widgets.
+            Also organized by pack.
+    
+    """
 
     def __init__(self, parent, controller, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
@@ -954,21 +977,22 @@ class OutputPage(Frame):
             image_url_text = image_url
         self.lab.config(text=image_url_text)
         self.lab.pack()
-        hover_key = HoverText(self.lab, "Color Key: Ratio Column\n"
-                                        "Red:First Quarter\n"
-                                        "Orange:Second Quarter\n"
-                                        "Green:Third Quarter\n"
-                                        "Blue:Fourth Quarter")
-        # TODO Add values of quartiles used as bounds ^
+        self.controller.show_key()
+
+        # hover_key = HoverText(self.lab, "Color Key: Ratio Column\n"
+        #                                 "Red:First Quarter\n"
+        #                                 "Yellow:Second Quarter\n"
+        #                                 "Green:Third Quarter\n"
+        #                                 "Blue:Fourth Quarter")
         self.wordcloud.bind('<Enter>',
-                            lambda e:
-                            (self.controller.status_bar.set(image_url),
-                             hover_key.enter(e)))
+                            lambda e: self.controller.status_bar.set(image_url)
+                            )
+        #                     hover_key.enter(e)))
         self.wordcloud.bind('<Leave>',
-                            lambda e: (self.controller.status_bar.set('Ready'),
-                                       hover_key.leave(e)))
+                            lambda e: self.controller.status_bar.set('Ready'))
+        #                               hover_key.leave(e)))
         self.wordcloud.bind('<Button-1>', lambda e: self.open_image(image_url))
-        self.wordcloud.bind('<Motion>', hover_key.motion)
+        # self.wordcloud.bind('<Motion>', hover_key.motion)
 
     def open_image(self, image_url):
         top = Toplevel(self)
@@ -977,6 +1001,52 @@ class OutputPage(Frame):
         expandable_cloud = Label(top, image=photo)
         expandable_cloud.image = photo
         expandable_cloud.pack()
+
+
+class Key(Frame):
+
+    BG_COLOR = 'black'
+    FG_COLOR = 'white'
+    FONT = ('TkDefaultFont', 20)
+
+    def __init__(self, parent, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
+        self.parent = parent
+
+    def fill_in(self):
+
+        # get colors as a list from makecloud.py
+        colors = list(makecloud.quartiles.keys())
+        title = Frame(self, {'background': Key.BG_COLOR})
+        label = Label(title,
+                      text='Key (Ratios)',
+                      font=FONT,
+                      background=Key.BG_COLOR,
+                      foreground=Key.FG_COLOR,
+                      pady=10)
+        label.pack()
+        title.grid(row=0, column=0)
+
+        # TODO loop each column
+        quartiles = [makecloud.quartile1,
+                     makecloud.median,
+                     makecloud.quartile3,
+                     len(makecloud.symbols) - 1]
+
+        for i in range(4):
+            col = Frame(self, {'background': Key.BG_COLOR})
+            q_str = "0" if i == 0 \
+                else str(round(makecloud.symbols[quartiles[i-1]][2], 4))
+            q_str += " to "
+            q_str += str(round(makecloud.symbols[quartiles[i]][2], 4))
+            lab = Label(col, text=q_str,
+                        font=FONT,
+                        foreground=colors[i],
+                        background=Key.BG_COLOR,
+                        padx=5,
+                        pady=10)
+            lab.pack()
+            col.grid(row=0, column=1+i)
 
 
 def make_form(frame, row_start, fields):

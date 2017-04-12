@@ -86,6 +86,10 @@ form_elements = {
     'descriptions': None,
     'sort': None
 }
+col_num = {
+    'symbol': None,
+    'synonym': None
+}
 
 
 def get_entries(root):
@@ -133,6 +137,12 @@ def get_entries(root):
         return
     except FileNotFoundError as e:
         showinfo(title='Error', message=str(e))
+
+    # Nothing is wrong so proceed
+
+    # remove key if it is there
+    if root.key.winfo_ismapped():
+        root.key.pack_forget()
     ws = wb.active
     if advanced_page.v.get() == 'SELECT':
 
@@ -156,7 +166,9 @@ def get_entries(root):
     form_elements['sort'] = advanced_page.sort.get() == 1
 
     # try:
-    rows = remove_duplicates(ws)
+    rows = read_sheet(ws)
+    locate_columns(rows)
+    rows = remove_duplicates(rows)
     if not rows:
         print("quit get_entries b/c rows is None")
         return
@@ -165,7 +177,7 @@ def get_entries(root):
     rows = rows[:form_elements['num_genes']+1]
 
     # this is the column that TOTAL COUNT will be written in
-    total_count_col = ws.max_column
+    total_count_col = len(rows)
     genes = get_aliases(rows)
     form_elements['num_genes'] = len(genes)
     print("Num genes: %d" % form_elements['num_genes'])
@@ -200,7 +212,6 @@ def get_entries(root):
         wb.save(save_as)
         sys.exit()
 
-
     # except (AttributeError, IndexError) as e:
     #     showinfo(title="Column Error",
     #              message="Check advanced page column input. \n" + str(e))
@@ -233,27 +244,26 @@ def read_sheet(ws, amt=None):
     return gene_rows
 
 
-def remove_duplicates(ws):
-    """Removes duplicated rows and empty rows from worksheet"""
-    global symbol_col_num, form_elements
-    rows = read_sheet(ws)
-    rows_no_duplicates = []
-    [rows_no_duplicates.append(row) for row in rows
-     if row not in rows_no_duplicates]
-    rows = [row for row in rows_no_duplicates if len([data for data in row if
-                                                      data is not None]) > 1]
+def locate_columns(rows):
+    global col_num
+
+    # if the setting is auto for columns
     if form_elements['column_letters'] == 'AUTO':
         if 'Gene symbol' in rows[0]:
-            symbol_col_num = rows[0].index('Gene symbol')
+            col_num['symbol'] = rows[0].index('Gene symbol')
         elif 'SYMBOL' in rows[0]:
-            symbol_col_num = rows[0].index('SYMBOL')
+            col_num['symbol'] = rows[0].index('SYMBOL')
         else:
             showinfo(title="Column Error",
                      message='Automatic column search could not find "Gene '
                              'symbol" or "SYMBOL" in spreadsheet')
             return
+
+    # if the column letters setting is manual
     else:
         symbol_letter = form_elements['column_letters'][0]
+
+        # ensures that the columns are valid for symbol and synonyms
         if ' ' in symbol_letter:
             showinfo(title='Column Error', message="Check advanced page symbol"
                                                    " column input for spaces.")
@@ -270,12 +280,57 @@ def remove_duplicates(ws):
                      message="Check that the advanced page symbol column input"
                              " was in the range of the spreadsheet.")
             return
+
+        # no problems
         else:
-            symbol_col_num = ord(symbol_letter.lower()) \
+            col_num['symbol'] = ord(symbol_letter.lower()) \
                              - 97
 
-            # removes rows with no symbol
-    rows = [row for row in rows if row[symbol_col_num] is not None]
+    if form_elements['column_letters'] == 'AUTO':
+        if 'Gene title' in rows[0]:
+            col_num['synonym'] = rows[0].index('Gene title')
+        elif 'SYNONYMS' in rows[0]:
+            col_num['synonym'] = rows[0].index('SYNONYMS')
+        else:
+            showinfo(title='Column Error',
+                     message='Automatic column search could not find '
+                             '"Gene title" or "SYNONYMS" in spreadsheet')
+    else:
+        if ' ' in form_elements['column_letters'][1]:
+            showinfo(title='Column Error', message="Check advanced page symbol"
+                                                   " column input for spaces.")
+            return
+        elif any(char.isdigit() for char in
+                 form_elements['column_letters'][1]):
+            showinfo(title='Column Error',
+                     message="Check advanced page symbol column input for "
+                             "numbers.")
+            return
+
+        # if every element in the column is None (empty)
+        elif all(el is None for el in
+                 [row[ord(form_elements['column_letters'][1].lower()) - 97]
+                  for row in rows]):
+            showinfo(title='Column Error',
+                     message="Check that the advanced page symbol column input"
+                             " was in the range of the spreadsheet.")
+            return
+        else:
+            col_num['synonym'] = ord(form_elements['column_letters'][1].lower())\
+                               - 97
+
+
+def remove_duplicates(rows):
+    """Removes duplicated rows and empty rows from worksheet"""
+    global form_elements
+    rows_no_duplicates = []
+    [rows_no_duplicates.append(row) for row in rows
+        if row not in rows_no_duplicates]
+    rows = [row for row in rows_no_duplicates if len([data for data in row if
+                                                      data is not None]) > 1]
+
+    # and removes rows with no symbol
+    rows = [row for row in rows if row[col_num['symbol']] is not None]
     return rows
 
 
@@ -294,47 +349,16 @@ def get_aliases(gene_rows):
     First it adds the symbol to the list of aliases, then it adds the synonyms
     (separated by semicolon) and returns all of the aliases of all the
     genes."""
-    if form_elements['column_letters'] == 'AUTO':
-        if 'Gene title' in gene_rows[0]:
-            synonyms_col_num = gene_rows[0].index('Gene title')
-        elif 'SYNONYMS' in gene_rows[0]:
-            synonyms_col_num = gene_rows[0].index('SYNONYMS')
-        else:
-            showinfo(title='Column Error',
-                     message='Automatic column search could not find '
-                             '"Gene symbol" or "SYMBOL" in spreadsheet')
-    else:
-        if ' ' in form_elements['column_letters'][1]:
-            showinfo(title='Column Error', message="Check advanced page symbol"
-                                                   " column input for spaces.")
-            return
-        elif any(char.isdigit() for char in
-                 form_elements['column_letters'][1]):
-            showinfo(title='Column Error',
-                     message="Check advanced page symbol column input for "
-                             "numbers.")
-            return
 
-        # if every element in the column is None (empty)
-        elif all(el is None for el in
-                 [row[ord(form_elements['column_letters'][1].lower()) - 97]
-                  for row in gene_rows]):
-            showinfo(title='Column Error',
-                     message="Check that the advanced page symbol column input"
-                             " was in the range of the spreadsheet.")
-            return
-        else:
-            synonyms_col_num = ord(form_elements['column_letters'][1].lower())\
-                               - 97
     gene_aliases = []
     for gene in gene_rows[1:]:
-        if type(gene[symbol_col_num]) == datetime:
+        if type(gene[col_num['symbol']]) == datetime:
             aliases = []
         else:
             # symbols column is added to the list of names
-            aliases = gene[symbol_col_num].split('///')
-        if gene[synonyms_col_num] is not None:
-            synonyms = str(gene[synonyms_col_num]).split("; ")  #AttributeError: 'datetime.datetime' object has no attribute 'split'
+            aliases = gene[col_num['symbol']].split('///')
+        if gene[col_num['synonym']] is not None:
+            synonyms = str(gene[col_num['synonym']]).split("; ")  #AttributeError: 'datetime.datetime' object has no attribute 'split'
             aliases.extend(synonyms)
         gene_aliases.append(aliases)
     return gene_aliases
@@ -397,7 +421,7 @@ def set_info(ws, email, keywords, genes, root):
 
         if form_elements['descriptions']:
             print("Getting descriptions...")
-            symbols_list = [row[symbol_col_num] for row in rows[1:]]
+            symbols_list = [row[col_num['symbol']] for row in rows[1:]]
             row = 2
             for i, symbol in enumerate(symbols_list):
                 if ask_quit:
@@ -409,7 +433,7 @@ def set_info(ws, email, keywords, genes, root):
                         comment.width = '1000'  # TODO see if this works
                         comment.height = '1000'
                         ws.cell(row=row,
-                                column=symbol_col_num+1).comment = comment
+                                column=col_num['symbol']+1).comment = comment
                     except Exception as e:
                         error_msg = ("Getting descriptions was interrupted by"
                                      " an error, but your spreadsheet was "
