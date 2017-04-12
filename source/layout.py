@@ -84,6 +84,8 @@ class Window(Tk):
         self.nbk = ttk.Notebook(self.sub_container, width=NOTEBOOK_WIDTH,
                                 height=NOTEBOOK_HEIGHT)
 
+        self.nbk.bind('<<NotebookTabChanged>>', self.change_tabs)
+
         # contains ttk.Frame type for adding and showing frames
         self.frames = {}
         self.custom_frames = {}  # contains custom types for accessing elements
@@ -204,6 +206,11 @@ class Window(Tk):
             self.status_bar.set("Ready")
 
     def show_frame(self, cont):
+        """ Adds and displays new tabs of the notebook.
+        
+        :param cont: String title of the new frame being displayed
+        :return: void
+        """
         if cont == 'AdvancedPage' and \
                         str(self.frames['FormPage']) not in self.nbk.tabs():
             self.show_frame('FormPage')
@@ -287,6 +294,13 @@ class Window(Tk):
     def show_key(self):
         self.key.fill_in()
         self.key.pack(side='bottom', fill='both', expand=True)
+
+    def change_tabs(self, event):
+        if self.key.winfo_ismapped() == 1 and self.nbk.tab("current")['text'] != 'Output':
+            self.key.pack_forget()
+        elif self.key.winfo_ismapped() == 0 \
+                and self.nbk.tab("current")['text'] == 'Output':
+            self.key.pack()
 
     @staticmethod
     def complete():

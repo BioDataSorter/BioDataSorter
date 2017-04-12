@@ -56,7 +56,6 @@ from requests import get
 from Bio import Entrez
 from openpyxl import load_workbook
 from openpyxl.comments import Comment
-from openpyxl.utils import _get_column_letter
 
 import layout
 
@@ -141,7 +140,7 @@ def get_entries(root):
     # Nothing is wrong so proceed
 
     # remove key if it is there
-    if root.key.winfo_ismapped():
+    if root.key.winfo_ismapped() == 1:
         root.key.pack_forget()
     ws = wb.active
     if advanced_page.v.get() == 'SELECT':
@@ -247,12 +246,16 @@ def read_sheet(ws, amt=None):
 def locate_columns(rows):
     global col_num
 
+    def lower_list(l):
+        return [i.lower() for i in l]
+
     # if the setting is auto for columns
+    # searches rows ignoring capitalization
     if form_elements['column_letters'] == 'AUTO':
-        if 'Gene symbol' in rows[0]:
-            col_num['symbol'] = rows[0].index('Gene symbol')
-        elif 'SYMBOL' in rows[0]:
-            col_num['symbol'] = rows[0].index('SYMBOL')
+        if 'gene symbol' in lower_list(rows[0]):
+            col_num['symbol'] = rows[0].index('gene symbol')
+        elif 'symbol' in lower_list(rows[0]):
+            col_num['symbol'] = lower_list(rows[0]).index('symbol')
         else:
             showinfo(title="Column Error",
                      message='Automatic column search could not find "Gene '
@@ -287,10 +290,10 @@ def locate_columns(rows):
                              - 97
 
     if form_elements['column_letters'] == 'AUTO':
-        if 'Gene title' in rows[0]:
-            col_num['synonym'] = rows[0].index('Gene title')
+        if 'gene title' in lower_list(rows[0]):
+            col_num['synonym'] = lower_list(rows[0]).index('gene title')
         elif 'SYNONYMS' in rows[0]:
-            col_num['synonym'] = rows[0].index('SYNONYMS')
+            col_num['synonym'] = lower_list(rows[0]).index('SYNONYMS')
         else:
             showinfo(title='Column Error',
                      message='Automatic column search could not find '
@@ -364,6 +367,16 @@ def get_aliases(gene_rows):
     return gene_aliases
 
 
+def colnum_string(n):
+    div = n
+    string = ""
+    while div > 0:
+        m = (div - 1) % 26
+        string = chr(65 + m) + string
+        div = int((div - m) / 26)
+    return string
+
+
 def set_info(ws, email, keywords, genes, root):
     """Writes TOTAL COUNT column and %keyword% COLUMN (helper function
     _write_info), as well as descriptions and sorting if these options are
@@ -404,7 +417,7 @@ def set_info(ws, email, keywords, genes, root):
 
         # sets the ratio column
         col = total_count_col + 2
-        ws.column_dimensions[_get_column_letter(col)].width = 16
+        ws.column_dimensions[colnum_string(col)].width = 16
         ws.cell(row=1, column=col).value = "COUNT RATIO"
         row = 2
         # TODO ratio does not work check test14!!!
@@ -514,10 +527,10 @@ def get_count(aliases, keywords, email):
 
 
 def _write_info(ws, all_counts, keywords):
-    ws.column_dimensions[_get_column_letter(total_count_col)].width = 16
+    ws.column_dimensions[colnum_string(total_count_col)].width = 16
 
     ws.cell(row=1, column=total_count_col).value = "TOTAL COUNT"
-    ws.column_dimensions[_get_column_letter(total_count_col+1)].width = 16
+    ws.column_dimensions[colnum_string(total_count_col+1)].width = 16
     ws.cell(row=1, column=total_count_col+1).value = \
         '"%s" COUNT' % "/".join(keywords)  # to title the columns
     row = 2
