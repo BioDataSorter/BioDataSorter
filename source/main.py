@@ -18,6 +18,9 @@ Attributes:
     wb (openpyxl.Workbook): This variable is used to store the representation
         of the Excel file chosen chosen as input, which is changed, then stored
         under another name that the user selects.
+        
+    pb_int (int): Keeps track of the progress of the process based on the 
+        number of queries so far, and updates progress bar accordingly.
 
     form_elements (dict):
         filename (str): The absolute file path and name of the input file
@@ -36,6 +39,10 @@ Attributes:
             descriptions box, but is false otherwise.
         sort (bool): This is changed to True if the user checks the sort box,
             but is false otherwise.
+            
+    col_num (dict):
+        symbol (int): index of symbol column in row
+        synonym (int): index of synonyms column in row
 
 
 
@@ -59,14 +66,13 @@ from openpyxl.comments import Comment
 
 import layout
 
-__version__ = "0.0.1"
+__version__ = "2.0.3"
 
 # =======
 # GLOBALS
 # =======
 
 wb = None
-symbol_col_num = None
 pb_int = 0  # global variable for num of times get_count has been executed
 total_queries = 0
 total_count_col = 29
@@ -166,8 +172,10 @@ def get_entries(root):
 
     # try:
     rows = read_sheet(ws)
-    locate_columns(rows)
     rows = remove_duplicates(rows)
+    rows[0][col_num['symbol']] = 'Gene symbol'
+    rows[0][col_num['synonym']] = 'Gene title'
+
     if not rows:
         print("quit get_entries b/c rows is None")
         return
@@ -187,7 +195,7 @@ def get_entries(root):
         total_queries += form_elements['num_genes']
     print("Total queries: %d" % total_queries)
     ws = wb.create_sheet(title='Output', index=0)
-    write_rows(rows, ws)
+    write_rows(rows, ws, col_num['symbol'])
 
     try:
         advanced_page.b3.config(state="disabled")
@@ -244,16 +252,25 @@ def read_sheet(ws, amt=None):
 
 
 def locate_columns(rows):
+    """Sets col_num global variable to correct symbol and synonyms indices.
+    
+    If automatic column retrieval is selected, this searches for a common 
+    header of the symbol and synonym column. Otherwise, it searches for the
+    header that the user manually inputted.
+    
+    :param rows: List of lists of each row of the Excel columns
+    :return: void
+    """
     global col_num
 
     def lower_list(l):
-        return [i.lower() for i in l]
+        return [i.lower() for i in l if i]
 
     # if the setting is auto for columns
     # searches rows ignoring capitalization
     if form_elements['column_letters'] == 'AUTO':
         if 'gene symbol' in lower_list(rows[0]):
-            col_num['symbol'] = rows[0].index('gene symbol')
+            col_num['symbol'] = lower_list(rows[0]).index('gene symbol')
         elif 'symbol' in lower_list(rows[0]):
             col_num['symbol'] = lower_list(rows[0]).index('symbol')
         else:
@@ -332,15 +349,34 @@ def remove_duplicates(rows):
     rows = [row for row in rows_no_duplicates if len([data for data in row if
                                                       data is not None]) > 1]
 
+    locate_columns(rows)
     # and removes rows with no symbol
     rows = [row for row in rows if row[col_num['symbol']] is not None]
+
     return rows
 
 
-def write_rows(rows, ws):
+def write_rows(rows, ws, symbol_col=None):
+    """Writes rows into new worksheet and moves symbols column to the front.
+    
+    :param rows: List of rows in the spreadsheet to write onto the output sheet
+    :param ws: openpyxl.Worksheet for output information
+    :param symbol_col: int to move symbol column to front. Would be None for 
+        conversion to Excel file from tab-delineated text file.
+    :return: void
+    """
+
+    if symbol_col:
+        r = 1
+        # put symbols column first
+        for row in rows:
+            ws.cell(row=r, column=1).value = row.pop(symbol_col)
+            r += 1
+
     r = 1
+    # fill in rest of the Excel spreadsheet
     for row in rows:
-        c = 1
+        c = 2  # start in the second column because first column is symbol
         for data in row:
             ws.cell(row=r, column=c).value = data
             c += 1
@@ -361,7 +397,10 @@ def get_aliases(gene_rows):
             # symbols column is added to the list of names
             aliases = gene[col_num['symbol']].split('///')
         if gene[col_num['synonym']] is not None:
-            synonyms = str(gene[col_num['synonym']]).split("; ")  #AttributeError: 'datetime.datetime' object has no attribute 'split'
+
+            # AttributeError: 'datetime.datetime' object has no attribute
+            # 'split'
+            synonyms = str(gene[col_num['synonym']]).split("; ")
             aliases.extend(synonyms)
         gene_aliases.append(aliases)
     return gene_aliases
@@ -445,8 +484,10 @@ def set_info(ws, email, keywords, genes, root):
                         comment = Comment(get_summary(symbol), "PubMed")
                         comment.width = '1000'  # TODO see if this works
                         comment.height = '1000'
+
+                        # assuming symbols column is in the first column
                         ws.cell(row=row,
-                                column=col_num['symbol']+1).comment = comment
+                                column=1).comment = comment
                     except Exception as e:
                         error_msg = ("Getting descriptions was interrupted by"
                                      " an error, but your spreadsheet was "
@@ -465,9 +506,9 @@ def set_info(ws, email, keywords, genes, root):
     if showinfo(title='Success',
                 message="Your file is located in " + path.dirname(
                     form_elements['save_as_name'])) == 'ok':
-        root.bar.pb.grid_forget()
-        root.custom_frames['FormPage'].run_button.config(state='enabled')
-        root.custom_frames['AdvancedPage'].b3.config(state='enabled')
+        root.bar.pb.pack_forget()
+        root.custom_frames['FormPage'].reset()
+        root.custom_frames['AdvancedPage'].reset()
         pb_int = 0
 
 

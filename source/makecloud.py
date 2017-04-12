@@ -45,14 +45,15 @@ def generate_word_cloud():
     run_again_msg = " Run the program to generate a correctly formatted "\
                     "output correctly formatted output file to graph."
     showinfo = messagebox.showinfo
-    if 'SYMBOL' in headers:  # Winthrop format
-        symbol_col = headers.index('SYMBOL')
-    elif 'Gene title' in headers:  # GEO format
+
+    # output will change header to 'Gene title'
+    # will not be compatible with old output
+    if 'Gene title' in headers:  # GEO format
         symbol_col = headers.index('Gene symbol')
     else:
         showinfo(title="Incorrect Output Format",
-                 message="No 'SYMBOL' column or 'Gene title' "
-                         "column found.")
+                 message="No 'Gene title' column found. Please rerun process "
+                         "to generate an updated output spreadsheet.")
         return
     if 'TOTAL COUNT' in headers:
         total_count_index = headers.index('TOTAL COUNT')

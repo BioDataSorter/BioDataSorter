@@ -638,6 +638,13 @@ class FormPage(Frame):
         else:
             self.v2_display.set(string)
 
+    def reset(self):
+        """Resets the run button and keeps form entries for future reference.
+        
+        :return: void
+        """
+        self.run_button.config(state='enabled')
+
 
 class AdvancedPage(Frame):
 
@@ -916,6 +923,9 @@ class AdvancedPage(Frame):
                         self.controller.bg_color)
         with open("config.ini", "w") as f:
             self.config.write(f)
+
+    def reset(self):
+        self.b3.config(state='enabled')
 
 
 class ProgressWin(Frame):

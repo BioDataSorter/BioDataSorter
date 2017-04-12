@@ -4,7 +4,17 @@ All notable changes will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [2.0.2]
+## [2.0.3] - 4-12-2017
+### Changed
+- symbol column is moved to first column in output
+- updated word cloud samples
+
+### Fixed
+- symbol column and synonyms column headers are changed to standard headers
+and are now compatible with the wordcloud feature
+- progress bar correctly disappears after process runs
+
+## [2.0.2] - 4-11-2017
 ### Added
 - locate_columns method and col_nums global variable to consolidate information
 - GUI_DEBUG global variable in layout.py to pass update_color during debugging
