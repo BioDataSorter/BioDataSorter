@@ -19,7 +19,7 @@ HEAD = ("Arial", 16)
 FONT = ("Arial", 10)
 COURIER = ("Courier New", 12)
 
-WINDOW_WIDTH = 570
+WINDOW_WIDTH = 600
 WINDOW_HEIGHT = 440
 NOTEBOOK_WIDTH = 400
 NOTEBOOK_HEIGHT = 280
@@ -53,21 +53,20 @@ class Window(Tk):
 
         # sub_container for options bar
         self.sub_container = Frame(self.container)
-        self.sub_container.pack(side=TOP, expand=TRUE, fill=BOTH)
+        self.sub_container.pack()
 
         self.side_bar = OptionsBar(self.sub_container, self)
-        self.side_bar.grid(column=0, rowspan=3, padx=(10, 0), pady=10)
+        self.side_bar.grid(column=0, rowspan=3, pady=10)
 
-        self.pb_space = Frame(self.sub_container, {'height': 50,
+        self.pb_space = Frame(self.container, {'height': 50,
                                                    'width': 500,
                                                    'background': 'red'})
 
         # pady 2nd param also controls status bar placement
         # if the window was resizable it would be placed incorrectly
-        self.pb_space.grid(row=7, columnspan=3, pady=(15, WINDOW_HEIGHT -
-                                                      NOTEBOOK_HEIGHT - 150))
-        self.pb_space.pack_propagate(0)
-        self.key = Key(self.pb_space, {'background': 'white',
+        self.pb_space.pack(pady=10)
+
+        self.key = WordcloudKey(self.pb_space, {'background': 'white',
                                        'highlightthickness': '4',
                                        'highlightcolor': 'gray90'})
 
@@ -296,7 +295,8 @@ class Window(Tk):
         self.key.pack(side='bottom', fill='both', expand=True)
 
     def change_tabs(self, event):
-        if self.key.winfo_ismapped() == 1 and self.nbk.tab("current")['text'] != 'Output':
+        if self.key.winfo_ismapped() == 1 and self.nbk.tab(
+                "current")['text'] != 'Output':
             self.key.pack_forget()
         elif self.key.winfo_ismapped() == 0 \
                 and self.nbk.tab("current")['text'] == 'Output':
@@ -451,7 +451,7 @@ class StartPage(Frame):
 
         lab = Label(self, text="Welcome to BioDataSorter", font=HEAD,
                     background=NOTEBOOK_COLOR, cursor='heart')
-        lab.grid(row=0, padx=padding_x, pady=padding_y)
+        lab.grid(row=0, pady=padding_y)
         # lab.bind('<Button-1>', self.surprise_color)
         lab.bind('<Leave>', lambda e:
                  # current color is reset
@@ -463,10 +463,10 @@ class StartPage(Frame):
                                  "a text file from GEO profile data.",
                             background='white',
                             font=FONT)
-        get_started.grid(row=1, pady=(0, 85))
+        get_started.grid(row=1)
 
         separator = Frame(self, height=1, width=NOTEBOOK_WIDTH, bg='dark gray')
-        separator.grid(row=2, pady=(0, 10))
+        separator.grid(row=2)
 
         underline = font.Font(font="arial 10 underline italic")
         self.github_link = "https://github.com/BioDataSorter/BioDataSorter"
@@ -484,7 +484,7 @@ class StartPage(Frame):
                      background=NOTEBOOK_COLOR,
                      cursor='hand2',
                      font=underline)
-        lab2.grid(row=3)
+        lab2.grid(row=3, pady=10)
         lab2.bind('<Enter>', lambda e: (lab2.config(foreground='blue'),
                                         controller.status_bar.set(
                                             self.github_link)))
@@ -492,6 +492,13 @@ class StartPage(Frame):
                                         controller.status_bar.set('Ready')))
         lab2.bind('<Button-1>', self.launch_page)
         lab2.bind('<Button-3>', self.on_button_3)
+
+        # weight of rows (title should take up more space and rest on bottom)
+        # should fix problem of getting cut off
+        self.rowconfigure(0, weight=1)
+        self.rowconfigure(1, weight=2)
+        self.rowconfigure(2, weight=0)
+        self.rowconfigure(3, weight=0)
 
     def launch_page(self, _=None):
         webbrowser.open_new_tab(self.github_link)
@@ -1027,7 +1034,7 @@ class OutputPage(Frame):
         expandable_cloud.pack()
 
 
-class Key(Frame):
+class WordcloudKey(Frame):
 
     BG_COLOR = 'black'
     FG_COLOR = 'white'
@@ -1041,24 +1048,23 @@ class Key(Frame):
 
         # get colors as a list from makecloud.py
         colors = list(makecloud.quartiles.keys())
-        title = Frame(self, {'background': Key.BG_COLOR})
+        title = Frame(self, {'background': WordcloudKey.BG_COLOR})
         label = Label(title,
                       text='Key (Ratios)',
                       font=FONT,
-                      background=Key.BG_COLOR,
-                      foreground=Key.FG_COLOR,
+                      background=WordcloudKey.BG_COLOR,
+                      foreground=WordcloudKey.FG_COLOR,
                       pady=10)
         label.pack()
         title.grid(row=0, column=0)
 
-        # TODO loop each column
         quartiles = [makecloud.quartile1,
                      makecloud.median,
                      makecloud.quartile3,
                      len(makecloud.symbols) - 1]
 
         for i in range(4):
-            col = Frame(self, {'background': Key.BG_COLOR})
+            col = Frame(self, {'background': WordcloudKey.BG_COLOR})
             q_str = "0" if i == 0 \
                 else str(round(makecloud.symbols[quartiles[i-1]][2], 4))
             q_str += " to "
@@ -1066,7 +1072,7 @@ class Key(Frame):
             lab = Label(col, text=q_str,
                         font=FONT,
                         foreground=colors[i],
-                        background=Key.BG_COLOR,
+                        background=WordcloudKey.BG_COLOR,
                         padx=5,
                         pady=10)
             lab.pack()

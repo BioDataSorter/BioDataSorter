@@ -184,7 +184,7 @@ def get_entries(root):
     rows = rows[:form_elements['num_genes']+1]
 
     # this is the column that TOTAL COUNT will be written in
-    total_count_col = len(rows)
+    total_count_col = len(rows[0])
     genes = get_aliases(rows)
     form_elements['num_genes'] = len(genes)
     print("Num genes: %d" % form_elements['num_genes'])
@@ -437,7 +437,8 @@ def set_info(ws, email, keywords, genes, root):
         print("#%d" % number)
 
         # makes sure no aliases are common words that throw off the search
-        aliases = [alias for alias in aliases if len(alias) > 2]
+        # (string length is longer than 2 letters)
+        aliases = ["(" + alias + ")" for alias in aliases if len(alias) > 2]
         counts = get_count(aliases, keywords, email)
         # the length of the list counts returned is the length of keywords + 1
         if len(counts) < 2:  # if counts list is not complete
@@ -473,7 +474,9 @@ def set_info(ws, email, keywords, genes, root):
 
         if form_elements['descriptions']:
             print("Getting descriptions...")
-            symbols_list = [row[col_num['symbol']] for row in rows[1:]]
+
+            # symbol col is now 0
+            symbols_list = [row[0] for row in rows[1:]]
             row = 2
             for i, symbol in enumerate(symbols_list):
                 if ask_quit:
@@ -482,8 +485,8 @@ def set_info(ws, email, keywords, genes, root):
                 if symbol != '':
                     try:
                         comment = Comment(get_summary(symbol), "PubMed")
-                        comment.width = '1000'  # TODO see if this works
-                        comment.height = '1000'
+                        comment.width = '500pt'  # TODO see if this works
+                        comment.height = '700pt'  # original was 108 x 59.25
 
                         # assuming symbols column is in the first column
                         ws.cell(row=row,
@@ -617,7 +620,8 @@ def get_summary(symbol):
     try:
         entrez_id = mg.query('symbol:%s' % symbol,
                              species='human')['hits'][0]['entrezgene']
-    except (KeyError, IndexError):
+    except Exception as e:
+        print("Error with query: " + str(e))
         return "No entries found. (Entrez ID not found)"
 
     url = 'http://www.ncbi.nlm.nih.gov/gene/' + str(entrez_id)

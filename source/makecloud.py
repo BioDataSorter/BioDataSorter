@@ -2,6 +2,7 @@ import tkinter.filedialog
 import tkinter.messagebox as messagebox
 import zipfile
 import collections
+import math
 
 import wordcloud
 from openpyxl import *
@@ -101,7 +102,7 @@ def generate_word_cloud():
     # nothing actually wrong with this vvv
     cloud.generate_from_frequencies(tuple([symbol[:2] for symbol in symbols]))
 
-    quarter_size = round((len(symbols) - num_ratio_zero) / 4)
+    quarter_size = math.floor((len(symbols) - num_ratio_zero) / 4)
     quartile1 = num_ratio_zero + quarter_size
     median = num_ratio_zero + quarter_size * 2
     quartile3 = num_ratio_zero + quarter_size * 3

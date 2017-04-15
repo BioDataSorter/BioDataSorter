@@ -4,6 +4,18 @@ All notable changes will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.0.4] - 4-14-2017
+### Changed
+- window width 30 pixels wider to accommodate other operating systems
+- add parenthesis around all synonyms (multiple words increase the number of citations)
+
+### Fixed
+- descriptions query now accesses the right column
+- position of the output columns
+- spacing on the title page should be fixed
+- rounding in wordcloud which posed a problem for smaller sets of data
+- hopefully fixed comment sizing (added "pt" to the end of the strings)
+
 ## [2.0.3] - 4-12-2017
 ### Changed
 - symbol column is moved to first column in output
