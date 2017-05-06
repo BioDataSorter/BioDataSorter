@@ -453,7 +453,10 @@ def set_info(ws, email, keywords, genes, root):
 
     if not quick_save:
         if form_elements['sort']:
-            ws, rows = sort_ws(rows)
+            if root.custom_frames['AdvancedPage'].reverse_sort.get() == 1:
+                ws_rows = sort_ws(rows, True)
+            else:
+                ws, rows = sort_ws(rows)
 
         # sets the ratio column
         col = total_count_col + 2
@@ -591,14 +594,14 @@ def _write_info(ws, all_counts, keywords):
     return ws, rows
 
 
-def sort_ws(rows):
+def sort_ws(rows, sort_reverse=False):
     """Sorts the file's genes into a list of tuples"""
     ws = wb.active
     header = rows[0]
     gene_rows = rows[1:]
 
     # sorts genes by "Total Count" column
-    gene_rows.sort(key=lambda x: x[total_count_col - 1])
+    gene_rows.sort(key=lambda x: x[total_count_col - 1], reverse=sort_reverse)
     row = 2
     for gene in gene_rows:
         col = 1

@@ -4,6 +4,13 @@ All notable changes will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.0.5] - 5-6-2017
+### Added
+- sort options (high to low or low to high) (updated config saving for this)
+
+### Changed
+- GUI for advanced page has options
+
 ## [2.0.4] - 4-14-2017
 ### Changed
 - window width 30 pixels wider to accommodate other operating systems

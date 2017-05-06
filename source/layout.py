@@ -762,16 +762,30 @@ class AdvancedPage(Frame):
         c.bind('<Leave>', lambda e: controller.status_bar.set('Ready'))
 
         c2 = ttk.Checkbutton(self, text="Sort", variable=self.sort,
-                             style="White.TCheckbutton")
-        c2.grid(row=6, column=2, sticky=W, padx=5, pady=5)
+                             style="White.TCheckbutton",
+                             command=self.toggle_sort_options)
+        c2.grid(row=6, column=1, padx=5, pady=5)
         c2.bind('<Enter>',
                 lambda e: controller.status_bar.set("Sort the output file by "
                                                     "the total number of "
                                                     "citations found."))
         c2.bind('<Leave>', lambda e: controller.status_bar.set('Ready'))
 
+        self.reverse_sort = BooleanVar()  # 1 --> high to low sort
+        self.reverse_sort.set(0)
+        self.low_to_high = ttk.Radiobutton(self, text="Low to high",
+                                           state="disabled", value=False,
+                                           variable=self.reverse_sort,
+                                           style="White.TRadiobutton")
+        self.high_to_low = ttk.Radiobutton(self, text="High to low",
+                                           state="disabled",  value=True,
+                                           variable=self.reverse_sort,
+                                           style="White.TRadiobutton")
+        self.low_to_high.grid(row=7, column=1, sticky=E, padx=5, pady=(0, 10))
+        self.high_to_low.grid(row=7, column=2, sticky=E, padx=5, pady=(0, 10))
+
         buttons_frame = Frame(self, background=NOTEBOOK_COLOR)
-        buttons_frame.grid(row=7, columnspan=3)
+        buttons_frame.grid(row=8, columnspan=3)
 
         b1 = ttk.Button(buttons_frame, text="Import Entries",
                         command=self.import_entries)
@@ -791,6 +805,18 @@ class AdvancedPage(Frame):
 
     def enable_entry(self):
         self.entry.configure(state="normal")
+
+    def toggle_sort_options(self):
+        """
+        Enable selection of high to low or low to high sorting options
+        :return: 
+        """
+        if self.sort.get() == 1:
+            self.low_to_high.configure(state="normal")
+            self.high_to_low.configure(state="normal")
+        else:
+            self.low_to_high.configure(state="disabled")
+            self.high_to_low.configure(state="disabled")
 
     def disable_entry(self):
         self.entry.delete(0, END)
@@ -841,6 +867,8 @@ class AdvancedPage(Frame):
                         "ALL" if self.v.get() == "ALL" else self.entry.get())
         self.config.set("advanced", "Descriptions", str(self.desc.get()))
         self.config.set("advanced", "Sort", str(self.sort.get()))
+        self.config.set("advanced",  "Reverse Sort",
+                        str(self.reverse_sort.get()))
 
         self.config.set("main", "Filename",
                         '' if main.form_elements['filename'] is None
@@ -890,6 +918,13 @@ class AdvancedPage(Frame):
                                                 "Genes to Use"))
             self.desc.set(int(config.get("advanced", "Descriptions")))
             self.sort.set(int(config.get("advanced", "Sort")))
+            if self.sort.get() == 1:
+                self.reverse_sort.set(config.get("advanced", "Reverse Sort"))
+                self.high_to_low.configure(state="normal")
+                self.low_to_high.configure(state="normal")
+            else:
+                self.high_to_low.configure(state="disabled")
+                self.low_to_high.configure(state="disabled")
 
             main.form_elements['filename'] = config.get("main", "Filename") \
                 if config.get("main", "Filename") != '' else None
