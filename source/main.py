@@ -509,7 +509,7 @@ def set_info(ws, email, keywords, genes, root):
     wb.save(form_elements['save_as_name'])
     total_time = clock()
     total_time_str = "Total time: " + str(int(total_time / 60)) + " min " + \
-                     str(int(total_time % 60)) + " sec"
+                     str(int(total_time % 60)) + " sec "
 
     print("Done! " + total_time_str)
     if showinfo(title='Success',
