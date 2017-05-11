@@ -50,7 +50,7 @@ Attributes:
 
 from datetime import datetime
 from socket import timeout
-from time import sleep
+from time import sleep, clock
 from tkinter.messagebox import showwarning, showinfo, showerror
 from os import path
 from threading import Thread
@@ -78,6 +78,7 @@ total_queries = 0
 total_count_col = 29
 ask_quit = False
 ask_save_and_quit = False
+start_time = None
 
 # this is a global variable so the user input can be saved right after the
 # program is run
@@ -98,7 +99,7 @@ col_num = {
 
 
 def get_entries(root):
-    global wb, total_queries, total_count_col, form_elements
+    global wb, total_queries, total_count_col, form_elements, start_time
 
     def is_number(s):
         try:
@@ -144,6 +145,9 @@ def get_entries(root):
         showinfo(title='Error', message=str(e))
 
     # Nothing is wrong so proceed
+
+    # Start timer
+    clock()
 
     # remove key if it is there
     if root.key.winfo_ismapped() == 1:
@@ -218,10 +222,6 @@ def get_entries(root):
             save_as = form_elements['save_as_name'] + ".xlsx"
         wb.save(save_as)
         sys.exit()
-
-    # except (AttributeError, IndexError) as e:
-    #     showinfo(title="Column Error",
-    #              message="Check advanced page column input. \n" + str(e))
 
 
 def try_file(user_input):
@@ -507,10 +507,14 @@ def set_info(ws, email, keywords, genes, root):
         print("Quick save")
 
     wb.save(form_elements['save_as_name'])
+    total_time = clock()
+    total_time_str = "Total time: " + str(int(total_time / 60)) + " min " + \
+                     str(int(total_time % 60)) + " sec"
 
-    print("Done!")
+    print("Done! " + total_time_str)
     if showinfo(title='Success',
-                message="Your file is located in " + path.dirname(
+                message=total_time_str +
+                "Your file is located in " + path.dirname(
                     form_elements['save_as_name'])) == 'ok':
         root.bar.pb.pack_forget()
         root.custom_frames['FormPage'].reset()

@@ -4,6 +4,11 @@ All notable changes will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+
+## [2.0.6] - 5-11-2017
+### Added
+- displays amount of time the process takes in popup and console
+
 ## [2.0.5] - 5-6-2017
 ### Added
 - sort options (high to low or low to high) (updated config saving for this)
