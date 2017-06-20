@@ -7,6 +7,7 @@ import tkinter.ttk as ttk
 import webbrowser
 import configparser
 import getpass
+import logging
 
 import openpyxl
 from PIL import Image, ImageTk  # in project requirements as 'Pillow'
@@ -21,8 +22,8 @@ COURIER = ("Courier New", 12)
 
 WINDOW_WIDTH = 600
 WINDOW_HEIGHT = 440
-NOTEBOOK_WIDTH = 400
-NOTEBOOK_HEIGHT = 280
+NOTEBOOK_WIDTH = 430
+NOTEBOOK_HEIGHT = 300
 
 NOTEBOOK_COLOR = 'white'
 
@@ -848,7 +849,7 @@ class AdvancedPage(Frame):
             self.disable_columns_ents()
 
     def save(self):
-        print("saving")
+        logging.info("saving")
         sections = ['main', 'advanced']
         for section in sections:
             if not self.config.has_section(section):

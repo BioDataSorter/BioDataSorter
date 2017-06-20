@@ -57,6 +57,7 @@ from threading import Thread
 from tkinter import *
 from urllib import request
 from urllib.error import URLError
+import logging
 
 from mygene import MyGeneInfo
 from requests import get
@@ -114,7 +115,7 @@ def get_entries(root):
             request.urlopen('http://130.14.29.109', timeout=1)
             return True
         except (URLError, timeout) as err:
-            print(str(err))
+            logging.info("Can't connect to wifi: " + str(err))
             return False
 
     if not internet_on():
@@ -181,7 +182,7 @@ def get_entries(root):
     rows[0][col_num['synonym']] = 'Gene title'
 
     if not rows:
-        print("quit get_entries b/c rows is None")
+        logging.info("quit get_entries b/c rows is None")
         return
 
     # cuts down to the number of genes that the user wants
@@ -191,13 +192,13 @@ def get_entries(root):
     total_count_col = len(rows[0])
     genes = get_aliases(rows)
     form_elements['num_genes'] = len(genes)
-    print("Num genes: %d" % form_elements['num_genes'])
+    logging.info("Num genes: %d" % form_elements['num_genes'])
     total_queries = form_elements['num_genes'] * 2
     if advanced_page.desc.get() == 1:  # if the box is checked
 
         # adds the number of comment queries
         total_queries += form_elements['num_genes']
-    print("Total queries: %d" % total_queries)
+    logging.info("Total queries: %d" % total_queries)
     ws = wb.create_sheet(title='Output', index=0)
     write_rows(rows, ws, col_num['symbol'])
 
@@ -428,13 +429,13 @@ def set_info(ws, email, keywords, genes, root):
     # for each list of aliases (one gene) in the full list of genes
     for aliases in genes:
         if ask_quit:
-            print("Quitting...")
+            logging.info("Quitting...")
             sys.exit()
         if ask_save_and_quit:
             quick_save = True
-            print("Saving...")
+            logging.info("Saving...")
             break
-        print("#%d" % number)
+        logging.info("#%d" % number)
 
         # makes sure no aliases are common words that throw off the search
         # (string length is longer than 2 letters)
@@ -445,7 +446,7 @@ def set_info(ws, email, keywords, genes, root):
             quick_save = True
             break
         else:
-            print(counts)
+            logging.info(counts)
             all_counts.append(counts)
             number += 1
 
@@ -476,7 +477,7 @@ def set_info(ws, email, keywords, genes, root):
             row += 1
 
         if form_elements['descriptions']:
-            print("Getting descriptions...")
+            logging.info("Getting descriptions...")
 
             # symbol col is now 0
             symbols_list = [row[0] for row in rows[1:]]
@@ -499,19 +500,19 @@ def set_info(ws, email, keywords, genes, root):
                                      " an error, but your spreadsheet was "
                                      "saved.")
                         showerror(title='Error', message=error_msg)
-                        print(str(e))
+                        logging.info(str(e))
                         break
                 row += 1
 
     else:
-        print("Quick save")
+        logging.info("Quick save")
 
     wb.save(form_elements['save_as_name'])
     total_time = clock()
     total_time_str = "Total time: " + str(int(total_time / 60)) + " min " + \
                      str(int(total_time % 60)) + " sec "
 
-    print("Done! " + total_time_str)
+    logging.info("Done! " + total_time_str)
     if showinfo(title='Success',
                 message=total_time_str +
                 "Your file is located in " + path.dirname(
@@ -558,7 +559,7 @@ def get_count(aliases, keywords, email):
         try:
             handle = Entrez.egquery(term=query)
         except URLError as e:
-            print(str(e))
+            logging.info(str(e))
             # if PubMed blocks the queries then it waits 5 seconds and repeats
             sleep(5)
             try:
@@ -568,7 +569,7 @@ def get_count(aliases, keywords, email):
                             message=str(e)+" Your partial output "
                             "has been saved.")
                 return counts
-        print(query)
+        logging.info(query)
         record = Entrez.read(handle)
         for row in record["eGQueryResult"]:
             counts.append(row["Count"])
@@ -628,7 +629,7 @@ def get_summary(symbol):
         entrez_id = mg.query('symbol:%s' % symbol,
                              species='human')['hits'][0]['entrezgene']
     except Exception as e:
-        print("Error with query: " + str(e))
+        logging.info("Error with query: " + str(e))
         return "No entries found. (Entrez ID not found)"
 
     url = 'http://www.ncbi.nlm.nih.gov/gene/' + str(entrez_id)
@@ -652,11 +653,15 @@ def get_summary(symbol):
             extract_string = "No entries found. (match_end = -1)"
 
     else:
-        extract_string = "No entries found. (match_start= -1)"
+        extract_string = "No entries found. (match_start = -1)"
     return extract_string
 
 
 def main():
+    logging.basicConfig(level=logging.DEBUG,
+                        format='%(asctime)s %(levelname)s %(message)s',
+                        filename='myapp.log',
+                        filemode='w')
     root = layout.Window('BioDataSorter')
     root.geometry(str(layout.WINDOW_WIDTH) + 'x' + str(layout.WINDOW_HEIGHT)
                   + '+300+300')
