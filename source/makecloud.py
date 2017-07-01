@@ -3,6 +3,7 @@ import tkinter.messagebox as messagebox
 import zipfile
 import collections
 import math
+import logging
 
 import wordcloud
 from openpyxl import *
@@ -38,7 +39,8 @@ def generate_word_cloud():
     file = tkinter.filedialog.askopenfilename(**options)
     try:
         wb = load_workbook(filename=file, data_only=True)
-    except (FileNotFoundError, zipfile.BadZipfile):
+    except (FileNotFoundError, zipfile.BadZipfile) as e:
+        logging.warning("Exit generate_word_cloud because of error" + str(e))
         return
     ws = wb.active
     rows = main.read_sheet(ws)

@@ -73,6 +73,7 @@ __version__ = "2.0.3"
 # GLOBALS
 # =======
 
+logger = logging.getLogger()
 wb = None
 pb_int = 0  # global variable for num of times get_count has been executed
 total_queries = 0
@@ -178,7 +179,7 @@ def get_entries(root):
     # try:
     rows = read_sheet(ws)
     rows = remove_duplicates(rows)
-    rows[0][col_num['symbol']] = 'Gene symbol'
+    rows[0][col_num['symbol']] = 'Gene symbol'  # error if output is used
     rows[0][col_num['synonym']] = 'Gene title'
 
     if not rows:
@@ -200,6 +201,7 @@ def get_entries(root):
         total_queries += form_elements['num_genes']
     logging.info("Total queries: %d" % total_queries)
     ws = wb.create_sheet(title='Output', index=0)
+    logging.info(col_num['symbol'])
     write_rows(rows, ws, col_num['symbol'])
 
     try:
@@ -367,17 +369,20 @@ def write_rows(rows, ws, symbol_col=None):
     :return: void
     """
 
-    if symbol_col:
+    col = 1
+    # if this test failed there would be a blank column
+    if symbol_col is not None:
         r = 1
         # put symbols column first
         for row in rows:
-            ws.cell(row=r, column=1).value = row.pop(symbol_col)
+            ws.cell(row=r, column=col).value = row.pop(symbol_col)
             r += 1
+        col = 2  # start in the second column because first column is symbol
 
     r = 1
     # fill in rest of the Excel spreadsheet
     for row in rows:
-        c = 2  # start in the second column because first column is symbol
+        c = col
         for data in row:
             ws.cell(row=r, column=c).value = data
             c += 1
@@ -657,11 +662,20 @@ def get_summary(symbol):
     return extract_string
 
 
-def main():
+def set_log():
+    formatter = '%(asctime)s %(levelname)s %(message)s'
     logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s %(levelname)s %(message)s',
-                        filename='myapp.log',
+                        format=formatter,
+                        filename='app.log',
                         filemode='w')
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(logging.INFO)
+    ch.setFormatter(logging.Formatter('%(message)s'))
+    logger.addHandler(ch)
+
+
+def main():
+    set_log()
     root = layout.Window('BioDataSorter')
     root.geometry(str(layout.WINDOW_WIDTH) + 'x' + str(layout.WINDOW_HEIGHT)
                   + '+300+300')

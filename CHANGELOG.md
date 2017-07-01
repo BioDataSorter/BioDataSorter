@@ -5,7 +5,16 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
-## [2.0.7] - 6/20/2017
+## [2.0.8] - 7-1-2017
+### Changed
+- log file is now called app.log instead of myapp.log
+- progress info prints to stdout as well as app.log file
+
+### Fixed
+- blank first column in output caused by faulty None test
+- descriptions checked first column which was blank
+
+## [2.0.7] - 6-20-2017
 ### Changed
 - changed print to console to logging to a .log file
 
