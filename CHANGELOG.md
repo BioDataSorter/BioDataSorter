@@ -4,6 +4,12 @@ All notable changes will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.0.9] - 7-11-2017
+### Added
+- extra row get descriptions is selected to note Entrez_ID
+
+### Fixed
+- cannot connect to internet error modified to PubMed error
 
 ## [2.0.8] - 7-1-2017
 ### Changed

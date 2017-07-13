@@ -78,6 +78,7 @@ wb = None
 pb_int = 0  # global variable for num of times get_count has been executed
 total_queries = 0
 total_count_col = 29
+entrez_id_col = 28
 ask_quit = False
 ask_save_and_quit = False
 start_time = None
@@ -101,7 +102,8 @@ col_num = {
 
 
 def get_entries(root):
-    global wb, total_queries, total_count_col, form_elements, start_time
+    global wb, total_queries, total_count_col, form_elements, start_time, \
+        entrez_id_col
 
     def is_number(s):
         try:
@@ -120,7 +122,7 @@ def get_entries(root):
             return False
 
     if not internet_on():
-        showwarning(title='Connect to internet',
+        showwarning(title='Connect to PubMed',
                           message="Make sure you are connected to "
                           "internet before starting.")
         return
@@ -191,6 +193,12 @@ def get_entries(root):
 
     # this is the column that TOTAL COUNT will be written in
     total_count_col = len(rows[0])
+
+    # if user selected get descriptions, entrez ids are added to output
+    if form_elements['descriptions']:
+        entrez_id_col = total_count_col  # writes to first output column
+        total_count_col += 1  # total_count_col shifted
+
     genes = get_aliases(rows)
     form_elements['num_genes'] = len(genes)
     logging.info("Num genes: %d" % form_elements['num_genes'])
@@ -484,6 +492,8 @@ def set_info(ws, email, keywords, genes, root):
         if form_elements['descriptions']:
             logging.info("Getting descriptions...")
 
+            ws.cell(row=1, column=entrez_id_col).value = "ENTREZ ID"
+
             # symbol col is now 0
             symbols_list = [row[0] for row in rows[1:]]
             row = 2
@@ -493,7 +503,10 @@ def set_info(ws, email, keywords, genes, root):
                 pb_int += 1
                 if symbol != '':
                     try:
-                        comment = Comment(get_summary(symbol), "PubMed")
+                        entrez_id, summary = get_summary(symbol)
+                        ws.cell(row=row,
+                                column=entrez_id_col).value = entrez_id
+                        comment = Comment(summary, "PubMed")
                         comment.width = '500pt'  # TODO see if this works
                         comment.height = '700pt'  # original was 108 x 59.25
 
@@ -635,7 +648,7 @@ def get_summary(symbol):
                              species='human')['hits'][0]['entrezgene']
     except Exception as e:
         logging.info("Error with query: " + str(e))
-        return "No entries found. (Entrez ID not found)"
+        return "Not found", "No entries found. (Entrez ID not found)"
 
     url = 'http://www.ncbi.nlm.nih.gov/gene/' + str(entrez_id)
     response = get(url, version)
@@ -659,7 +672,7 @@ def get_summary(symbol):
 
     else:
         extract_string = "No entries found. (match_start = -1)"
-    return extract_string
+    return entrez_id, extract_string
 
 
 def set_log():
