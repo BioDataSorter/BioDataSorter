@@ -192,7 +192,7 @@ def get_entries(root):
     rows = rows[:form_elements['num_genes']+1]
 
     # this is the column that TOTAL COUNT will be written in
-    total_count_col = len(rows[0])
+    total_count_col = len(rows[0]) + 1
 
     # if user selected get descriptions, entrez ids are added to output
     if form_elements['descriptions']:
