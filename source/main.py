@@ -47,8 +47,12 @@ Attributes:
 
 
 """
-
+import smtplib
 from datetime import datetime
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
+from os.path import basename
+from smtplib import SMTP
 from socket import timeout
 from time import sleep, clock
 from tkinter.messagebox import showwarning, showinfo, showerror
@@ -58,12 +62,16 @@ from tkinter import *
 from urllib import request
 from urllib.error import URLError
 import logging
+from logging import handlers
+import atexit
 
+from google.cloud.storage import Blob
 from mygene import MyGeneInfo
 from requests import get
 from Bio import Entrez
 from openpyxl import load_workbook
 from openpyxl.comments import Comment
+from google.cloud import storage
 
 import layout
 
@@ -687,7 +695,31 @@ def set_log():
     logger.addHandler(ch)
 
 
+def send_log():
+
+    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server.starttls()
+    server.login("biodatasorter@gmail.com", "${dN:w{//d^5Pz-4")
+
+    msg = MIMEMultipart()
+    msg['From'] = "biodatasorter@gmail.com"
+    msg['To'] = "biodatasorter@gmail.com"
+    msg['Subject'] = "Log"
+    with open('app.log', "rb") as fil:
+        part = MIMEApplication(
+            fil.read(),
+            Name=basename('app.log')
+        )
+    # After the file is closed
+    part['Content-Disposition'] = 'attachment; filename="%s"' % basename('app.log')
+    msg.attach(part)
+
+    server.sendmail("biodatasorter@gmail.com", "biodatasorter@gmail.com", msg.as_string())
+    server.quit()
+
+
 def main():
+    atexit.register(send_log)
     set_log()
     root = layout.Window('BioDataSorter')
     root.geometry(str(layout.WINDOW_WIDTH) + 'x' + str(layout.WINDOW_HEIGHT)
