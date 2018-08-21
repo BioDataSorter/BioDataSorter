@@ -48,4 +48,4 @@ program can be found in the [Sample Data folder](https://github.com/BioDataSorte
 
 ## Contact Us
 Send us questions, constructive criticism, comments, and suggestions for features!
-Email: caitlinchou@gmail.com
+Email: akiravei@gmail.com or caitlinchou@gmail.com
